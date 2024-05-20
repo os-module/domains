@@ -1,0 +1,15 @@
+[package]
+name = "procfs"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+interface = { git = "https://github.com/os-module/domain-lib"  }
+rref = { git = "https://github.com/os-module/domain-lib"  }
+basic = { git = "https://github.com/os-module/domain-lib"  }
+
+generic = { path = "../generic" }
+vfscore = { git = "https://github.com/os-module/rvfs.git", features = ["linux_error"] }
+dynfs = { git = "https://github.com/os-module/rvfs.git" }
+log = "0"

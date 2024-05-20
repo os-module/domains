@@ -1,0 +1,16 @@
+[package]
+name = "net_stack"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+interface = { git = "https://github.com/os-module/domain-lib"  }
+rref = { git = "https://github.com/os-module/domain-lib"  }
+basic = { git = "https://github.com/os-module/domain-lib"  }
+
+
+spin = "0"
+lose-net-stack = { git = "https://github.com/os-module/lose-net-stack", branch = "new_feature", features = ["log"]}
+log = "0"
+downcast-rs = { version = "1.2.0", default-features = false }

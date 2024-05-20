@@ -1,0 +1,15 @@
+[package]
+name = "gvirtio_mmio_block"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+malloc = { path = "../../../domain-lib/malloc" }
+corelib = { path = "../../../domain-lib/corelib" }
+basic = { git = "https://github.com/os-module/domain-lib"  }
+rref = { git = "https://github.com/os-module/domain-lib"  }
+interface = { git = "https://github.com/os-module/domain-lib",  features = ["domain"]  }
+
+virtio_mmio_block = { path = "../../drivers/virtio_mmio_block" }

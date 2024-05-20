@@ -1,0 +1,15 @@
+[package]
+name = "fifo_scheduler"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+basic = { git = "https://github.com/os-module/domain-lib", features = ["task"]  }
+interface = { git = "https://github.com/os-module/domain-lib"  }
+rref = { git = "https://github.com/os-module/domain-lib"  }
+task_meta = { git = "https://github.com/os-module/domain-lib"  }
+common_scheduler = { path = "../common_scheduler" }
+
+log = "0"

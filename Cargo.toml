@@ -1,0 +1,11 @@
+[workspace]
+
+members = [
+    "common/*",
+    "drivers/*",
+    "fs/*",
+    "generated/g*",
+    "xtask"
+]
+
+resolver = "2"
