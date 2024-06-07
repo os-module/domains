@@ -1,10 +1,10 @@
 use alloc::sync::Arc;
 
-use basic::{constants::task::WaitOptions, AlienError, AlienResult};
+use basic::{constants::task::WaitOptions, println, AlienError, AlienResult};
 use memory_addr::VirtAddr;
 use task_meta::TaskStatus;
 
-use crate::{processor::current_task, scheduler_domain};
+use crate::processor::current_task;
 
 pub fn do_wait4(
     pid: isize,
@@ -26,7 +26,8 @@ pub fn do_wait4(
         }
         let wait_options = WaitOptions::from_bits(options).unwrap();
         let wait_task = wait_task.unwrap();
-        if wait_task.status() == TaskStatus::Terminated {
+        let tid = wait_task.tid();
+        if wait_task.status() == TaskStatus::Terminated && basic::is_task_exit(tid).unwrap() {
             let exit_code = wait_task.exit_code();
             if wait_options.contains(WaitOptions::WNOWAIT) {
                 // recycle the task later
@@ -38,6 +39,9 @@ pub fn do_wait4(
             } else {
                 // recycle the task now
                 task.inner().children.remove(&wait_task.pid());
+                let tid = wait_task.tid();
+                basic::remove_task(tid).expect("remove task failed");
+                println!("release task [{}-{}]", wait_task.pid(), wait_task.tid());
                 assert_eq!(
                     Arc::strong_count(&wait_task),
                     1,
@@ -52,7 +56,7 @@ pub fn do_wait4(
         if wait_options.contains(WaitOptions::WNOHANG) {
             return Ok(0);
         } else {
-            scheduler_domain!().yield_now().unwrap();
+            basic::yield_now().unwrap();
         }
     }
 }

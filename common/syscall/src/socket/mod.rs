@@ -8,7 +8,7 @@ use basic::{
     },
     AlienError, AlienResult,
 };
-use interface::{NetDomain, SchedulerDomain, SocketArgTuple, TaskDomain, VfsDomain};
+use interface::{NetDomain, SocketArgTuple, TaskDomain, VfsDomain};
 use log::error;
 use rref::{RRef, RRefVec};
 
@@ -107,7 +107,6 @@ pub fn sys_accept(
     task_domain: &Arc<dyn TaskDomain>,
     vfs_domain: &Arc<dyn VfsDomain>,
     net_stack_domain: &Arc<dyn NetDomain>,
-    scheduler_domain: &Arc<dyn SchedulerDomain>,
     fd: usize,
     addr: usize,
     addr_len: usize,
@@ -134,7 +133,7 @@ pub fn sys_accept(
                 let fd = task_domain.add_fd(inode_id)?;
                 return Ok(fd as isize);
             }
-            Err(AlienError::EBLOCKING) => scheduler_domain.yield_now()?,
+            Err(AlienError::EBLOCKING) => basic::yield_now()?,
             Err(err) => return Err(err),
         }
         // check if there is a EINTR signal
@@ -145,7 +144,6 @@ pub fn sys_connect(
     task_domain: &Arc<dyn TaskDomain>,
     vfs_domain: &Arc<dyn VfsDomain>,
     net_stack_domain: &Arc<dyn NetDomain>,
-    scheduler_domain: &Arc<dyn SchedulerDomain>,
     fd: usize,
     addr: usize,
     addr_len: usize,
@@ -172,7 +170,7 @@ pub fn sys_connect(
             Err(AlienError::EBLOCKING) => {}
             Err(err) => return Err(err),
         }
-        scheduler_domain.yield_now()?;
+        basic::yield_now()?;
         // check if there is a EINTR signal
     }
 }
@@ -181,7 +179,6 @@ pub fn sys_recvfrom(
     task_domain: &Arc<dyn TaskDomain>,
     vfs_domain: &Arc<dyn VfsDomain>,
     net_stack_domain: &Arc<dyn NetDomain>,
-    scheduler_domain: &Arc<dyn SchedulerDomain>,
     fd: usize,
     buf: usize,
     len: usize,
@@ -217,7 +214,7 @@ pub fn sys_recvfrom(
                     return Ok(arg_tuple.len as isize);
                 } else {
                     tmp_arg_tuple = arg_tuple;
-                    scheduler_domain.yield_now()?
+                    basic::yield_now()?
                 }
             }
             // Err(AlienError::EBLOCKING) => {

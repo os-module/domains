@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-interface = { git = "https://github.com/os-module/domain-lib"  }
-rref = { git = "https://github.com/os-module/domain-lib"  }
-basic = { git = "https://github.com/os-module/domain-lib"  }
+interface = { path = "../../../domain-lib/interface"  }
+rref = { path = "../../../domain-lib/rref"  }
+basic = { path = "../../../domain-lib/basic"  }
 
 rtc  = { git = "https://github.com/os-module/rtc", branch = "dev" }
 timestamp = { git = "https://github.com/Byte-OS/timestamp" }

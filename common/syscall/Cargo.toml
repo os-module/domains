@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-basic = { git = "https://github.com/os-module/domain-lib"  }
-interface = { git = "https://github.com/os-module/domain-lib"  }
-rref = { git = "https://github.com/os-module/domain-lib"  }
+basic = { path = "../../../domain-lib/basic"  }
+interface = { path = "../../../domain-lib/interface"  }
+rref = { path = "../../../domain-lib/rref"  }
 
 pod = { git = "https://github.com/asterinas/pod", rev = "d7dba56" }
 vfscore = { git = "https://github.com/os-module/rvfs.git", features = ["linux_error"] }

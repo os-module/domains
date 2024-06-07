@@ -49,6 +49,7 @@ impl ShadowBlockDomain for ShadowBlockDomainImpl {
         Ok(())
     }
 
+    // todo!(fix it if more than one thread read the same block at the same time)
     fn read_block(&self, block: u32, data: RRef<[u8; 512]>) -> AlienResult<RRef<[u8; 512]>> {
         let blk = BLOCK.get().unwrap();
         let mut data = data;

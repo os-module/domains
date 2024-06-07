@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-interface = { git = "https://github.com/os-module/domain-lib"  }
-basic = { git = "https://github.com/os-module/domain-lib"  }
+interface = { path = "../../../domain-lib/interface"  }
+basic = { path = "../../../domain-lib/basic"  }
 
 generic = { path = "../generic" }
 ramfs = { git = "https://github.com/os-module/rvfs.git" }

@@ -2,7 +2,21 @@ use std::{collections::BTreeMap, fs, path::Path};
 
 use serde::Deserialize;
 
+fn check_dir_exist() {
+    let disk_dir = Path::new("./build/disk");
+    if !disk_dir.exists() {
+        // create disk directory
+        fs::create_dir_all(disk_dir).expect("failed to create disk directory");
+    }
+    let init_dir = Path::new("./build/init");
+    if !init_dir.exists() {
+        // create init directory
+        fs::create_dir_all(init_dir).expect("failed to create init directory");
+    }
+}
+
 pub fn build_single(name: &str, log: &str) {
+    check_dir_exist();
     let domain_list = fs::read_to_string("./domain-list.toml").unwrap();
     let config: Config = toml::from_str(&domain_list).unwrap();
     let all_members = config.domains.get("members").unwrap();
@@ -62,6 +76,7 @@ struct Config {
 }
 
 pub fn build_all(log: &str) {
+    check_dir_exist();
     let domain_list = fs::read_to_string("./domain-list.toml").unwrap();
     let config: Config = toml::from_str(&domain_list).unwrap();
     std::process::Command::new("mkdir")

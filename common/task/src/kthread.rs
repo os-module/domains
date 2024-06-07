@@ -10,15 +10,13 @@ use basic::{
 use interface::VFS_ROOT_ID;
 use memory_addr::VirtAddr;
 use ptable::VmSpace;
-use rref::RRef;
 use small_index::IndexAllocator;
-use task_meta::{TaskMeta, TaskStatus};
+use task_meta::{TaskBasicInfo, TaskMeta, TaskSchedulingInfo, TaskStatus};
 
 use crate::{
     elf::VmmPageAllocator,
     processor::add_task,
     resource::{FdManager, HeapInfo, MMapInfo, ResourceLimits, TidHandle},
-    scheduler_domain,
     task::{FsContext, Task, TaskInner},
     vfs_shim::{STDIN, STDOUT},
 };
@@ -28,8 +26,11 @@ pub fn ktread_create(func: fn(), name: &str) -> AlienResult<()> {
     let pid = tid.clone();
 
     let context = TaskContext::new_kernel(func as _, VirtAddr::from(0));
-    let task_meta = TaskMeta::new(tid.raw(), context);
-    let k_stack_top = scheduler_domain!().add_one_task(RRef::new(task_meta))?;
+    let task_basic_info = TaskBasicInfo::new(tid.raw(), context);
+    let scheduling_info = TaskSchedulingInfo::new(tid.raw(), 1, usize::MAX);
+    let task_meta = TaskMeta::new(task_basic_info, scheduling_info);
+
+    let k_stack_top = basic::add_one_task(task_meta)?;
 
     // fake kspace
     let kspace = VmSpace::<VmmPageAllocator>::new();

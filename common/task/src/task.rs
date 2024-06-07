@@ -9,6 +9,7 @@ use alloc::{
 use core::{fmt::Debug, ops::Range};
 
 use basic::{
+    arch::hart_id,
     config::*,
     constants::{
         signal::{SignalHandlers, SignalNumber, SignalReceivers},
@@ -24,9 +25,8 @@ use memory_addr::{PhysAddr, VirtAddr};
 use page_table::MappingFlags;
 use pod::Pod;
 use ptable::{PhysPage, VmArea, VmAreaType, VmIo, VmSpace};
-use rref::RRef;
 use small_index::IndexAllocator;
-use task_meta::{TaskMeta, TaskStatus};
+use task_meta::{TaskBasicInfo, TaskMeta, TaskSchedulingInfo, TaskStatus};
 
 use crate::{
     elf::{
@@ -34,7 +34,6 @@ use crate::{
         VmmPageAllocator,
     },
     resource::{AuxVec, FdManager, HeapInfo, MMapInfo, ResourceLimits, TidHandle, UserStack},
-    scheduler_domain,
     vfs_shim::{ShimFile, STDIN, STDOUT},
 };
 
@@ -308,10 +307,11 @@ impl Task {
         );
 
         let context = TaskContext::new_user(VirtAddr::from(0));
-        let task_meta = TaskMeta::new(task.tid.raw(), context);
-        let k_stack_top = scheduler_domain!()
-            .add_one_task(RRef::new(task_meta))
-            .unwrap();
+
+        let task_basic_info = TaskBasicInfo::new(task.tid.raw(), context);
+        let scheduling_info = TaskSchedulingInfo::new(task.tid.raw(), 1, 1 << hart_id());
+        let task_meta = TaskMeta::new(task_basic_info, scheduling_info);
+        let k_stack_top = basic::add_one_task(task_meta).unwrap();
         task.kernel_stack = k_stack_top;
 
         let user_sp = user_stack.init(&mut task.address_space.lock()).unwrap();
@@ -418,10 +418,11 @@ impl Task {
         };
 
         let context = TaskContext::new_user(VirtAddr::from(0));
-        let task_meta = TaskMeta::new(task.tid.raw(), context);
-        let k_stack_top = scheduler_domain!()
-            .add_one_task(RRef::new(task_meta))
-            .unwrap();
+        let task_basic_info = TaskBasicInfo::new(task.tid.raw(), context);
+        let scheduling_info = TaskSchedulingInfo::new(task.tid.raw(), 1, usize::MAX);
+        let task_meta = TaskMeta::new(task_basic_info, scheduling_info);
+
+        let k_stack_top = basic::add_one_task(task_meta).unwrap();
         task.kernel_stack = k_stack_top;
 
         // let old_trap_context = self.trap_frame();

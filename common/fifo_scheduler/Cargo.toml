@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-basic = { git = "https://github.com/os-module/domain-lib", features = ["task"]  }
-interface = { git = "https://github.com/os-module/domain-lib"  }
-rref = { git = "https://github.com/os-module/domain-lib"  }
-task_meta = { git = "https://github.com/os-module/domain-lib"  }
+basic = { path = "../../../domain-lib/basic", features = ["task"]  }
+interface = { path = "../../../domain-lib/interface"  }
+rref = { path = "../../../domain-lib/rref"  }
+task_meta = { path = "../../../domain-lib/task_meta"  }
 common_scheduler = { path = "../common_scheduler" }
 
 log = "0"

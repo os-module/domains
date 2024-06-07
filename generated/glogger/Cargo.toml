@@ -8,8 +8,8 @@ edition = "2021"
 [dependencies]
 malloc = { path = "../../../domain-lib/malloc" }
 corelib = { path = "../../../domain-lib/corelib" }
-basic = { git = "https://github.com/os-module/domain-lib",  default-features = false  }
-rref = { git = "https://github.com/os-module/domain-lib"  }
-interface = { git = "https://github.com/os-module/domain-lib",  features = ["domain"]  }
+basic = { path = "../../../domain-lib/basic",  default-features = false  }
+rref = { path = "../../../domain-lib/rref"  }
+interface = { path = "../../../domain-lib/interface",  features = ["domain"]  }
 
 logger = { path = "../../common/logger" }

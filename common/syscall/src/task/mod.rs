@@ -4,7 +4,7 @@ mod resource;
 use alloc::sync::Arc;
 
 use basic::AlienResult;
-use interface::{SchedulerDomain, TaskDomain};
+use interface::TaskDomain;
 pub use ipc::*;
 use log::info;
 pub use resource::*;
@@ -39,8 +39,8 @@ pub fn sys_execve(
     task_domain.do_execve(filename_ptr, argv_ptr, envp_ptr)
 }
 
-pub fn sys_yield(scheduler_domain: &Arc<dyn SchedulerDomain>) -> AlienResult<isize> {
-    scheduler_domain.yield_now()?;
+pub fn sys_yield() -> AlienResult<isize> {
+    basic::yield_now()?;
     Ok(0)
 }
 

@@ -8,7 +8,6 @@ use task_meta::TaskStatus;
 use crate::{
     init::INIT_PROCESS,
     processor::{current_task, remove_task},
-    scheduler_domain,
 };
 
 pub fn do_exit(exit_code: i32) -> AlienResult<isize> {
@@ -40,15 +39,12 @@ pub fn do_exit(exit_code: i32) -> AlienResult<isize> {
     } else {
         info!("exit clear_child_tid is 0");
     }
-
     if task.send_sigchld_when_exit || task.pid() == task.tid() {
         //send_signal(parent.pid, SignalNumber::SIGCHLD as usize);
     }
-
-    task.inner().status = TaskStatus::Terminated;
-
     remove_task(task.tid()); // remove task from global task manager
+    task.inner().status = TaskStatus::Terminated;
     drop(task);
-    scheduler_domain!().exit_now()?;
+    basic::exit_now()?;
     Ok(0)
 }

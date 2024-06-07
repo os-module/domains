@@ -11,7 +11,7 @@ use basic::{
     sync::RwLock,
     AlienError, AlienResult,
 };
-use interface::{Basic, DomainType, InodeID, NetDomain, SchedulerDomain, SocketID, VfsDomain};
+use interface::{Basic, DomainType, InodeID, NetDomain, SocketID, VfsDomain};
 use log::debug;
 use rref::{RRef, RRefVec};
 use spin::Once;
@@ -38,8 +38,6 @@ mod shim;
 mod socket;
 mod sys;
 mod tree;
-
-static SCHEDULER_DOMAIN: Once<Arc<dyn SchedulerDomain>> = Once::new();
 static NET_STACK_DOMAIN: Once<Arc<dyn NetDomain>> = Once::new();
 static VFS_MAP: RwLock<BTreeMap<InodeID, Arc<dyn File>>> = RwLock::new(BTreeMap::new());
 static INODE_ID: AtomicU64 = AtomicU64::new(4);
@@ -77,13 +75,6 @@ impl Basic for VfsDomainImpl {}
 impl VfsDomain for VfsDomainImpl {
     fn init(&self, initrd: &[u8]) -> AlienResult<()> {
         tree::init_filesystem(initrd).unwrap();
-        let scheduler_domain = basic::get_domain("scheduler").unwrap();
-        match scheduler_domain {
-            DomainType::SchedulerDomain(scheduler_domain) => {
-                SCHEDULER_DOMAIN.call_once(|| scheduler_domain);
-            }
-            _ => panic!("scheduler domain not found"),
-        };
         let net_stack_domain = basic::get_domain("net_stack").unwrap();
         match net_stack_domain {
             DomainType::NetDomain(net_stack_domain) => {

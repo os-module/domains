@@ -5,9 +5,9 @@ edition = "2021"
 
 
 [dependencies]
-interface = { git = "https://github.com/os-module/domain-lib"  }
-rref = { git = "https://github.com/os-module/domain-lib"  }
-basic = { git = "https://github.com/os-module/domain-lib"  }
+interface = { path = "../../../domain-lib/interface"  }
+rref = { path = "../../../domain-lib/rref"  }
+basic = { path = "../../../domain-lib/basic"  }
 
 
 spin = "0"

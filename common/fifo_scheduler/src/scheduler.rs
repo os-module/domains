@@ -1,11 +1,13 @@
-use alloc::{collections::VecDeque, sync::Arc};
+use alloc::collections::VecDeque;
 
-use basic::sync::Mutex;
-use common_scheduler::{resource::TaskMetaExt, Scheduler};
+use basic::arch::hart_id;
+use common_scheduler::Scheduler;
+use rref::RRef;
+use task_meta::TaskSchedulingInfo;
 
 #[derive(Debug)]
 pub struct FiFoScheduler {
-    tasks: VecDeque<Arc<Mutex<TaskMetaExt>>>,
+    tasks: VecDeque<RRef<TaskSchedulingInfo>>,
 }
 
 impl FiFoScheduler {
@@ -17,12 +19,21 @@ impl FiFoScheduler {
 }
 
 impl Scheduler for FiFoScheduler {
-    fn add_task(&mut self, task_meta: Arc<Mutex<TaskMetaExt>>) {
+    fn add_task(&mut self, task_meta: RRef<TaskSchedulingInfo>) {
         self.tasks.push_back(task_meta);
     }
 
-    fn fetch_task(&mut self) -> Option<Arc<Mutex<TaskMetaExt>>> {
-        self.tasks.pop_front()
+    fn fetch_task(&mut self) -> Option<RRef<TaskSchedulingInfo>> {
+        let hart_id = hart_id();
+        let res = self
+            .tasks
+            .iter()
+            .position(|info| info.cpus_allowed & (1 << hart_id) != 0);
+        // println!("fetch_task: {:?}, len: {}", res, self.tasks.len());
+        if let Some(index) = res {
+            return self.tasks.remove(index);
+        }
+        None
     }
 
     fn name(&self) -> &'static str {

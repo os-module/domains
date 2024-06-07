@@ -25,7 +25,7 @@ use vfscore::{
     VfsResult,
 };
 
-use crate::{kfile::File, SCHEDULER_DOMAIN};
+use crate::kfile::File;
 pub struct PipeFile {
     open_flag: Mutex<OpenFlags>,
     inode_copy: Arc<PipeInode>,
@@ -234,8 +234,7 @@ impl VfsFile for PipeInode {
                 } else {
                     // wait for writing
                     drop(buf);
-                    // do_suspend();
-                    SCHEDULER_DOMAIN.get().unwrap().yield_now().unwrap();
+                    basic::yield_now().unwrap();
                     debug!("pipe_read: suspend");
                 }
             } else {
@@ -261,8 +260,7 @@ impl VfsFile for PipeInode {
                 // release lock
                 drop(buf);
                 // wait for reading
-                // do_suspend();
-                SCHEDULER_DOMAIN.get().unwrap().yield_now().unwrap();
+                basic::yield_now().unwrap();
             } else {
                 let min = core::cmp::min(available, user_buf.len() - count);
                 debug!("pipe_write: min:{}, count:{}", min, count);

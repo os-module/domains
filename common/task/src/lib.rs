@@ -16,23 +16,11 @@ mod vfs_shim;
 use alloc::{boxed::Box, sync::Arc};
 
 use basic::{println, AlienError, AlienResult};
-use interface::{Basic, DomainType, InodeID, SchedulerDomain, TaskDomain, TmpHeapInfo};
+use interface::{Basic, DomainType, InodeID, TaskDomain, TmpHeapInfo};
 use memory_addr::VirtAddr;
 use rref::{RRef, RRefVec};
-use spin::Once;
 
 use crate::{processor::current_task, vfs_shim::ShimFile};
-
-pub static SCHEDULER_DOMAIN: Once<Arc<dyn SchedulerDomain>> = Once::new();
-
-#[macro_export]
-macro_rules! scheduler_domain {
-    () => {
-        crate::SCHEDULER_DOMAIN
-            .get()
-            .expect("scheduler domain not found")
-    };
-}
 
 #[derive(Debug)]
 pub struct TaskDomainImpl {}
@@ -53,14 +41,6 @@ impl TaskDomain for TaskDomainImpl {
             _ => panic!("vfs domain not found"),
         };
         vfs_shim::init_vfs_domain(vfs_domain);
-
-        let scheduler_domain = basic::get_domain("scheduler").unwrap();
-        let scheduler_domain = match scheduler_domain {
-            DomainType::SchedulerDomain(scheduler_domain) => scheduler_domain,
-            _ => panic!("scheduler domain not found"),
-        };
-        SCHEDULER_DOMAIN.call_once(|| scheduler_domain);
-
         init::init_task();
         println!("Init task domain success");
         Ok(())

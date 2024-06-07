@@ -24,7 +24,6 @@ use crate::{domain::*, fs::*, mm::*, signal::*, socket::*, system::*, task::*, t
 struct SysCallDomainImpl {
     vfs_domain: Arc<dyn VfsDomain>,
     task_domain: Arc<dyn TaskDomain>,
-    scheduler: Arc<dyn SchedulerDomain>,
     logger: Arc<dyn LogDomain>,
     net_stack_domain: Arc<dyn NetDomain>,
 }
@@ -33,14 +32,12 @@ impl SysCallDomainImpl {
     pub fn new(
         vfs_domain: Arc<dyn VfsDomain>,
         task_domain: Arc<dyn TaskDomain>,
-        scheduler: Arc<dyn SchedulerDomain>,
         logger: Arc<dyn LogDomain>,
         net_stack_domain: Arc<dyn NetDomain>,
     ) -> Self {
         Self {
             vfs_domain,
             task_domain,
-            scheduler,
             logger,
             net_stack_domain,
         }
@@ -156,7 +153,6 @@ impl SysCallDomain for SysCallDomainImpl {
             72 => sys_pselect6(
                 &self.vfs_domain,
                 &self.task_domain,
-                &self.scheduler,
                 args[0],
                 args[1],
                 args[2],
@@ -167,7 +163,6 @@ impl SysCallDomain for SysCallDomainImpl {
             73 => sys_ppoll(
                 &self.vfs_domain,
                 &self.task_domain,
-                &self.scheduler,
                 args[0],
                 args[1],
                 args[2],
@@ -186,7 +181,7 @@ impl SysCallDomain for SysCallDomainImpl {
             94 => sys_exit_group(&self.task_domain, args[0]),
             96 => sys_set_tid_address(&self.task_domain, args[0]),
             113 => sys_clock_gettime(&self.task_domain, args[0], args[1]),
-            124 => sys_yield(&self.scheduler),
+            124 => sys_yield(),
             134 => sys_sigaction(&self.task_domain, args[0], args[1], args[2]),
             135 => sys_sigprocmask(&self.task_domain, args[0], args[1], args[2], args[3]),
             154 => sys_set_pgid(&self.task_domain),
@@ -236,7 +231,6 @@ impl SysCallDomain for SysCallDomainImpl {
                 &self.task_domain,
                 &self.vfs_domain,
                 &self.net_stack_domain,
-                &self.scheduler,
                 args[0],
                 args[1],
                 args[2],
@@ -245,7 +239,6 @@ impl SysCallDomain for SysCallDomainImpl {
                 &self.task_domain,
                 &self.vfs_domain,
                 &self.net_stack_domain,
-                &self.scheduler,
                 args[0],
                 args[1],
                 args[2],
@@ -281,7 +274,6 @@ impl SysCallDomain for SysCallDomainImpl {
                 &self.task_domain,
                 &self.vfs_domain,
                 &self.net_stack_domain,
-                &self.scheduler,
                 args[0],
                 args[1],
                 args[2],
@@ -371,12 +363,6 @@ pub fn main() -> Box<dyn SysCallDomain> {
         _ => panic!("task domain not found"),
     };
 
-    let scheduler_domain = basic::get_domain("scheduler").unwrap();
-    let scheduler_domain = match scheduler_domain {
-        DomainType::SchedulerDomain(scheduler_domain) => scheduler_domain,
-        _ => panic!("scheduler domain not found"),
-    };
-
     let logger = basic::get_domain("logger").unwrap();
     let logger = match logger {
         DomainType::LogDomain(logger) => logger,
@@ -392,7 +378,6 @@ pub fn main() -> Box<dyn SysCallDomain> {
     Box::new(SysCallDomainImpl::new(
         vfs_domain,
         task_domain,
-        scheduler_domain,
         logger,
         net_stack_domain,
     ))

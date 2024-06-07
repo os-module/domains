@@ -6,11 +6,10 @@ use alloc::{boxed::Box, collections::VecDeque, sync::Arc};
 use core::fmt::Debug;
 
 use basic::{println, sync::Mutex, AlienError, AlienResult};
-use interface::{Basic, BufUartDomain, DeviceBase, DomainType, SchedulerDomain, UartDomain};
+use interface::{Basic, BufUartDomain, DeviceBase, DomainType, UartDomain};
 use spin::Once;
 
 static UART: Once<Arc<dyn UartDomain>> = Once::new();
-static SCHEDULER_DOMAIN: Once<Arc<dyn SchedulerDomain>> = Once::new();
 #[derive(Debug)]
 pub struct Uart {
     inner: Mutex<UartInner>,
@@ -45,11 +44,7 @@ impl DeviceBase for Uart {
                 inner.rx_buf.push_back(c);
                 if !inner.wait_queue.is_empty() {
                     let tid = inner.wait_queue.pop_front().unwrap();
-                    SCHEDULER_DOMAIN
-                        .get()
-                        .unwrap()
-                        .wake_up_wait_task(tid)
-                        .unwrap();
+                    basic::wake_up_wait_task(tid)?
                 }
             } else {
                 break;
@@ -75,14 +70,7 @@ impl BufUartDomain for Uart {
                 Err(AlienError::EINVAL)
             }
         }?;
-        let scheduler_domain = basic::get_domain("scheduler").unwrap();
-        match scheduler_domain {
-            DomainType::SchedulerDomain(scheduler_domain) => {
-                SCHEDULER_DOMAIN.call_once(|| scheduler_domain);
-                Ok(())
-            }
-            _ => return Err(AlienError::EINVAL),
-        }
+        Ok(())
     }
 
     fn putc(&self, ch: u8) -> AlienResult<()> {
@@ -97,11 +85,10 @@ impl BufUartDomain for Uart {
         loop {
             let mut inner = self.inner.lock();
             if inner.rx_buf.is_empty() {
-                let scheduler = SCHEDULER_DOMAIN.get().unwrap();
-                let tid = scheduler.current_tid()?.unwrap();
+                let tid = basic::current_tid()?.unwrap();
                 inner.wait_queue.push_back(tid);
                 drop(inner);
-                scheduler.current_to_wait()?;
+                basic::wait_now()?;
             } else {
                 return Ok(inner.rx_buf.pop_front());
             }

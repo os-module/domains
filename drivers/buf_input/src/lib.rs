@@ -4,11 +4,10 @@ extern crate alloc;
 use alloc::{boxed::Box, collections::VecDeque, sync::Arc};
 
 use basic::{config::MAX_INPUT_EVENT_NUM, println, sync::Mutex, AlienError, AlienResult};
-use interface::{Basic, BufInputDomain, DeviceBase, DomainType, InputDomain, SchedulerDomain};
+use interface::{Basic, BufInputDomain, DeviceBase, DomainType, InputDomain};
 use spin::Once;
 
 static INPUT_DOMAIN: Once<Arc<dyn InputDomain>> = Once::new();
-static SCHEDULER_DOMAIN: Once<Arc<dyn SchedulerDomain>> = Once::new();
 
 #[derive(Debug)]
 struct BufInput {
@@ -51,11 +50,7 @@ impl DeviceBase for BufInput {
         }
         while !inner.wait_queue.is_empty() && count > 0 {
             let tid = inner.wait_queue.pop_front().unwrap();
-            SCHEDULER_DOMAIN
-                .get()
-                .unwrap()
-                .wake_up_wait_task(tid)
-                .unwrap();
+            basic::wake_up_wait_task(tid)?;
             count -= 1;
         }
         // info!("read {} events", count);
@@ -81,14 +76,7 @@ impl BufInputDomain for BufInput {
                 Err(AlienError::EINVAL)
             }
         }?;
-        let scheduler_domain = basic::get_domain("scheduler").unwrap();
-        match scheduler_domain {
-            DomainType::SchedulerDomain(scheduler_domain) => {
-                SCHEDULER_DOMAIN.call_once(|| scheduler_domain);
-                Ok(())
-            }
-            _ => return Err(AlienError::EINVAL),
-        }
+        Ok(())
     }
 
     fn event_block(&self) -> AlienResult<u64> {
@@ -97,11 +85,10 @@ impl BufInputDomain for BufInput {
             if let Some(event) = inner.events.pop_front() {
                 return Ok(event);
             }
-            let scheduler = SCHEDULER_DOMAIN.get().unwrap();
-            let tid = scheduler.current_tid()?.unwrap();
+            let tid = basic::current_tid()?.unwrap();
             inner.wait_queue.push_back(tid);
             drop(inner);
-            scheduler.current_to_wait()?;
+            basic::wait_now()?;
         }
     }
 

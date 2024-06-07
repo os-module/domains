@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-interface = { git = "https://github.com/os-module/domain-lib"  }
-basic = { git = "https://github.com/os-module/domain-lib"  }
-rref = { git = "https://github.com/os-module/domain-lib"  }
+interface = { path = "../../../domain-lib/interface"  }
+basic = { path = "../../../domain-lib/basic"  }
+rref = { path = "../../../domain-lib/rref"  }
 
 virtio-drivers = { git = "https://github.com/os-module/safe-virtio-drivers" }
 virtio_mmio_common = { path = "../virtio_mmio_common" }

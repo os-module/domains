@@ -3,7 +3,7 @@ use alloc::{sync::Arc, vec::Vec};
 use basic::println;
 use spin::Lazy;
 
-use crate::{kthread, processor::add_task, scheduler_domain, task::Task, vfs_shim::read_all};
+use crate::{kthread, processor::add_task, task::Task, vfs_shim::read_all};
 
 pub static INIT_PROCESS: Lazy<Arc<Task>> = Lazy::new(|| {
     let mut data = Vec::new();
@@ -29,7 +29,7 @@ fn kthread_init() {
             // println!("kthread_init tick at {}", now);
             time = now;
         }
-        scheduler_domain!().yield_now().unwrap();
+        basic::yield_now().unwrap();
     }
     // kthread::ktrhead_exit();
 }

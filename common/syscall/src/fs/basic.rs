@@ -14,7 +14,7 @@ use basic::{
     AlienError, AlienResult,
 };
 use bit_field::BitField;
-use interface::{SchedulerDomain, TaskDomain, VfsDomain};
+use interface::{TaskDomain, VfsDomain};
 use log::{debug, info};
 use pod::Pod;
 use rref::{RRef, RRefVec};
@@ -253,7 +253,6 @@ pub fn sys_fstat(
 pub fn sys_pselect6(
     vfs: &Arc<dyn VfsDomain>,
     task_domain: &Arc<dyn TaskDomain>,
-    scheduler_domain: &Arc<dyn SchedulerDomain>,
     nfds: usize,
     readfds: usize,
     writefds: usize,
@@ -296,8 +295,6 @@ pub fn sys_pselect6(
     } else {
         0
     };
-
-    scheduler_domain.yield_now()?;
 
     loop {
         let mut set = 0;
@@ -368,7 +365,7 @@ pub fn sys_pselect6(
             }
         }
 
-        scheduler_domain.yield_now()?;
+        basic::yield_now()?;
 
         if let Some(wait_time) = wait_time {
             if wait_time <= TimeSpec::now().to_clock() {
@@ -386,7 +383,6 @@ pub fn sys_pselect6(
 pub fn sys_ppoll(
     vfs: &Arc<dyn VfsDomain>,
     task_domain: &Arc<dyn TaskDomain>,
-    scheduler_domain: &Arc<dyn SchedulerDomain>,
     fds_ptr: usize,
     nfds: usize,
     timeout: usize,
@@ -438,7 +434,7 @@ pub fn sys_ppoll(
             }
         }
         debug!("<sys_ppoll> suspend");
-        scheduler_domain.yield_now()?;
+        basic::yield_now()?;
     }
 }
 
