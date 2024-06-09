@@ -2,7 +2,7 @@
 #![forbid(unsafe_code)]
 extern crate alloc;
 
-use alloc::boxed::Box;
+use alloc::{boxed::Box, format, string::String};
 use core::ops::Range;
 
 use basic::{constants::io::RtcTime, io::SafeIORegion, println, AlienResult};
@@ -38,13 +38,26 @@ impl DeviceBase for Rtc {
     }
 }
 
+impl Rtc {
+    fn time(&self) -> String {
+        let rtc = RTC.get().unwrap();
+        let time_stamp_nanos = rtc.read_time();
+        const NANOS_PER_SEC: usize = 1_000_000_000;
+        let date = DateTime::new(time_stamp_nanos as usize / NANOS_PER_SEC);
+        format!(
+            "{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
+            date.year, date.month, date.day, date.hour, date.minutes, date.seconds
+        )
+    }
+}
+
 impl RtcDomain for Rtc {
-    fn init(&self, address_range: Range<usize>) -> AlienResult<()> {
+    fn init(&self, address_range: &Range<usize>) -> AlienResult<()> {
         println!("Rtc region: {:#x?}", address_range);
-        let safe_region = SafeIORegion::from(address_range);
+        let safe_region = SafeIORegion::from(address_range.clone());
         let rtc = GoldFishRtc::new(Box::new(SafeIORegionWrapper(safe_region)));
-        println!("current time: {:?}", rtc);
         RTC.call_once(|| rtc);
+        println!("current time: {}", self.time());
         Ok(())
     }
 

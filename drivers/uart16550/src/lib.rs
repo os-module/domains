@@ -37,13 +37,14 @@ impl DeviceBase for UartDomainImpl {
 impl Basic for UartDomainImpl {}
 
 impl UartDomain for UartDomainImpl {
-    fn init(&self, address_range: Range<usize>) -> AlienResult<()> {
-        let region = &address_range;
+    fn init(&self, address_range: &Range<usize>) -> AlienResult<()> {
+        let region = address_range;
         println!("uart_addr: {:#x}-{:#x}", region.start, region.end);
         let io_region = SafeIORegion::from(region.clone());
         let uart = Uart16550::new(Box::new(SafeIORegionWrapper(io_region)));
         UART.call_once(|| uart);
         self.enable_receive_interrupt()?;
+        println!("init uart success");
         Ok(())
     }
 

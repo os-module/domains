@@ -45,8 +45,8 @@ static NET: Once<Mutex<VirtIONet<HalImpl, MmioTransport, NET_QUEUE_SIZE>>> = Onc
 pub const NET_BUFFER_LEN: usize = 1600;
 
 impl NetDeviceDomain for VirtIoNetDomain {
-    fn init(&self, address_range: Range<usize>) -> AlienResult<()> {
-        let io_region = SafeIORW(SafeIORegion::from(address_range));
+    fn init(&self, address_range: &Range<usize>) -> AlienResult<()> {
+        let io_region = SafeIORW(SafeIORegion::from(address_range.clone()));
         let transport = MmioTransport::new(Box::new(io_region)).unwrap();
         let net = VirtIONet::new(transport, NET_BUFFER_LEN).expect("failed to create input driver");
         NET.call_once(|| Mutex::new(net));

@@ -27,10 +27,10 @@ impl DeviceBase for GPUDomain {
 }
 
 impl GpuDomain for GPUDomain {
-    fn init(&self, address_range: Range<usize>) -> AlienResult<()> {
+    fn init(&self, address_range: &Range<usize>) -> AlienResult<()> {
         let virtio_gpu_addr = address_range.start;
         basic::println!("virtio_gpu_addr: {:#x?}", virtio_gpu_addr);
-        let io_region = SafeIORW(SafeIORegion::from(address_range));
+        let io_region = SafeIORW(SafeIORegion::from(address_range.clone()));
         let transport = MmioTransport::new(Box::new(io_region)).unwrap();
         let mut gpu = VirtIOGpu::<HalImpl, MmioTransport>::new(transport)
             .expect("failed to create gpu driver");

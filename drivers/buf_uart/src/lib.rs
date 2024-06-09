@@ -70,6 +70,7 @@ impl BufUartDomain for Uart {
                 Err(AlienError::EINVAL)
             }
         }?;
+        println!("init buf uart success");
         Ok(())
     }
 

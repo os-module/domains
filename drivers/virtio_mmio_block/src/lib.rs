@@ -28,10 +28,10 @@ impl DeviceBase for BlkDomain {
 }
 
 impl BlkDeviceDomain for BlkDomain {
-    fn init(&self, device_info: Range<usize>) -> AlienResult<()> {
-        let region = &device_info;
+    fn init(&self, device_info: &Range<usize>) -> AlienResult<()> {
+        let region = device_info;
         println!("virtio_blk_addr: {:#x}-{:#x}", region.start, region.end);
-        let io_region = SafeIORW(SafeIORegion::from(device_info));
+        let io_region = SafeIORW(SafeIORegion::from(device_info.clone()));
         let transport = MmioTransport::new(Box::new(io_region)).unwrap();
         let blk = VirtIOBlk::<HalImpl, MmioTransport>::new(transport)
             .expect("failed to create virtio_blk");

@@ -25,8 +25,8 @@ impl DeviceBase for InputDevDomain {
 }
 
 impl InputDomain for InputDevDomain {
-    fn init(&self, address_range: Range<usize>) -> AlienResult<()> {
-        let io_region = SafeIORW(SafeIORegion::from(address_range));
+    fn init(&self, address_range: &Range<usize>) -> AlienResult<()> {
+        let io_region = SafeIORW(SafeIORegion::from(address_range.clone()));
         let transport = MmioTransport::new(Box::new(io_region)).unwrap();
         let input = VirtIOInput::<HalImpl, MmioTransport>::new(transport)
             .expect("failed to create input driver");
