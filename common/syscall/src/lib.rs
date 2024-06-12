@@ -51,7 +51,7 @@ impl SysCallDomain for SysCallDomainImpl {
         let log_info = "syscall domain test log domain.";
         self.logger.log(
             interface::Level::Info,
-            RRefVec::from_slice(log_info.as_bytes()),
+            &RRefVec::from_slice(log_info.as_bytes()),
         )?;
         println!("syscall domain init");
         Ok(())
@@ -67,7 +67,7 @@ impl SysCallDomain for SysCallDomainImpl {
             let log_info = format!("syscall: {}", syscall_name);
             self.logger.log(
                 interface::Level::Info,
-                RRefVec::from_slice(log_info.as_bytes()),
+                &RRefVec::from_slice(log_info.as_bytes()),
             )?;
         }
 
@@ -89,6 +89,7 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[1],
                 args[2],
             ),
+            46 => sys_ftruncate(&self.vfs_domain, &self.task_domain, args[0], args[1]),
             48 => sys_faccessat(
                 &self.vfs_domain,
                 &self.task_domain,
@@ -150,6 +151,14 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[1],
                 args[2],
             ),
+            71 => sys_sendfile(
+                &self.vfs_domain,
+                &self.task_domain,
+                args[0],
+                args[1],
+                args[2],
+                args[3],
+            ),
             72 => sys_pselect6(
                 &self.vfs_domain,
                 &self.task_domain,
@@ -177,6 +186,14 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[3],
             ),
             80 => sys_fstat(&self.vfs_domain, &self.task_domain, args[0], args[1]),
+            88 => sys_utimensat(
+                &self.vfs_domain,
+                &self.task_domain,
+                args[0],
+                args[1],
+                args[2],
+                args[3],
+            ),
             93 => sys_exit(&self.task_domain, args[0]),
             94 => sys_exit_group(&self.task_domain, args[0]),
             96 => sys_set_tid_address(&self.task_domain, args[0]),

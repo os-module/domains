@@ -3,13 +3,7 @@ use core::cmp::min;
 
 use basic::{
     config::MAX_FD_NUM,
-    constants::{
-        io::{
-            FaccessatFlags, FaccessatMode, FileStat, IoVec, PollEvents, PollFd, SeekFrom, StatFlags,
-        },
-        time::TimeSpec,
-        AT_FDCWD,
-    },
+    constants::{io::*, time::TimeSpec, AT_FDCWD},
     time::{TimeNow, ToClock},
     AlienError, AlienResult,
 };
@@ -73,7 +67,7 @@ pub fn sys_write(
     }
     let mut tmp_buf = RRefVec::<u8>::new(0, len);
     task_domain.copy_from_user(buf as usize, tmp_buf.as_mut_slice())?;
-    let w = vfs.vfs_write(file, &tmp_buf);
+    let w = vfs.vfs_write(file, &tmp_buf, len);
     w.map(|x| x as isize)
 }
 
@@ -152,7 +146,7 @@ pub fn sys_writev(
         let len = iov.len;
         let mut tmp_buf = RRefVec::<u8>::new(0, len);
         task_domain.copy_from_user(base, tmp_buf.as_mut_slice())?;
-        let w = vfs.vfs_write(file, &tmp_buf)?;
+        let w = vfs.vfs_write(file, &tmp_buf, len)?;
         count += w;
     }
     Ok(count as isize)
@@ -188,6 +182,17 @@ pub fn sys_fstatat(
     debug!("<sys_fstatat> file_stat: {:?}", file_stat);
     task_domain.copy_to_user(statbuf, file_stat.as_bytes())?;
     vfs.vfs_close(file)?;
+    Ok(0)
+}
+
+pub fn sys_ftruncate(
+    vfs: &Arc<dyn VfsDomain>,
+    task_domain: &Arc<dyn TaskDomain>,
+    fd: usize,
+    len: usize,
+) -> AlienResult<isize> {
+    let file = task_domain.get_fd(fd)?;
+    vfs.vfs_ftruncate(file, len as u64)?;
     Ok(0)
 }
 
@@ -248,6 +253,100 @@ pub fn sys_fstat(
     let file_stat = FileStat::from(*stat);
     task_domain.copy_to_user(statbuf, file_stat.as_bytes())?;
     Ok(0)
+}
+
+pub fn sys_utimensat(
+    _vfs: &Arc<dyn VfsDomain>,
+    _task_domain: &Arc<dyn TaskDomain>,
+    _dirfd: usize,
+    _path_ptr: usize,
+    _times_ptr: usize,
+    _flags: usize,
+) -> AlienResult<isize> {
+    const UTIME_NOW: usize = 0x3fffffff;
+    /// ignore
+    #[allow(dead_code)]
+    const UTIME_OMIT: usize = 0x3ffffffe;
+    // let mut tmp_buf = RRefVec::<u8>::new(0, 256);
+    // let len;
+    // (tmp_buf, len) = task_domain.read_string_from_user(path, tmp_buf)?;
+    // let path = core::str::from_utf8(&tmp_buf.as_slice()[..len]).unwrap();
+    // let flag = UtimensatFlags::from_bits_truncate(flags as u32);
+    // info!(
+    //     "<sys_utimensat> path: {:?} times: {:#x?} flags: {:?}",
+    //     path, times, flag
+    // );
+    // let (_, current_root) = user_path_at(task_domain, dirfd as isize, path)?;
+    // let path = RRefVec::from_slice(&path.as_bytes());
+    // let inode_id = vfs.vfs_open(current_root, &path, 0, 0)?;
+    // let mut atime = TimeSpec::new(0, 0);
+    // let mut mtime = TimeSpec::new(0, 0);
+    // task_domain.copy_from_user(times as *const TimeSpec, &mut atime)?;
+    // task_domain.copy_from_user((times as *const TimeSpec).add(1), &mut mtime)?;
+    // info!(
+    //     "utimensat: {:?} {:?} {:?} {:?}",
+    //     fd as isize, path, atime, mtime
+    // );
+    // if atime.tv_nsec == UTIME_NOW {
+    //     vfs.vfs_inode_update_time(inode_id, VfsTime::AccessTime(TimeSpec::now().into()))?;
+    // } else if atime.tv_nsec != UTIME_OMIT {
+    //     vfs.vfs_inode_update_time(inode_id, VfsTime::AccessTime(atime.into()))?;
+    // }
+    // if mtime.tv_nsec == UTIME_NOW {
+    //     vfs.vfs_inode_update_time(inode_id, VfsTime::ModifiedTime(TimeSpec::now().into()))?;
+    // } else if mtime.tv_nsec != UTIME_OMIT {
+    //     vfs.vfs_inode_update_time(inode_id, VfsTime::ModifiedTime(mtime.into()))?;
+    // }
+    unimplemented!()
+}
+
+pub fn sys_sendfile(
+    vfs: &Arc<dyn VfsDomain>,
+    task_domain: &Arc<dyn TaskDomain>,
+    out_fd: usize,
+    in_fd: usize,
+    offset_ptr: usize,
+    mut count: usize,
+) -> AlienResult<isize> {
+    let in_file = task_domain.get_fd(in_fd)?;
+    let out_file = task_domain.get_fd(out_fd)?;
+    const MAX_COUNT: usize = 0x7fff_f000;
+    if count > MAX_COUNT {
+        count = MAX_COUNT;
+    }
+    let mut shared_buf = RRefVec::new(0, 512);
+    let mut total = 0;
+
+    let mut offset = if offset_ptr != 0 {
+        let offset = task_domain.read_val_from_user::<u64>(offset_ptr)?;
+        Some(offset)
+    } else {
+        None
+    };
+    while total < count {
+        let (buf, r) = if let Some(offset) = offset.as_mut() {
+            let (buf, r) = vfs.vfs_read_at(in_file, *offset, shared_buf)?;
+            *offset += r as u64;
+            (buf, r)
+        } else {
+            let (buf, r) = vfs.vfs_read(in_file, shared_buf)?;
+            (buf, r)
+        };
+        if r == 0 {
+            break;
+        }
+        total += r;
+        let w = vfs.vfs_write(out_file, &buf, r)?;
+        if w != r {
+            break;
+        }
+        shared_buf = buf;
+    }
+    debug!("sendfile: write {} bytes,arg count: {}", total, count);
+    if let Some(offset) = offset {
+        task_domain.write_val_to_user(offset_ptr, &offset)?;
+    }
+    Ok(total as isize)
 }
 
 pub fn sys_pselect6(

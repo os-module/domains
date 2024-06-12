@@ -40,8 +40,8 @@ impl SchedulerDomain for CommonSchedulerDomain {
         Ok(())
     }
 
-    fn fetch_task(&self) -> AlienResult<Option<RRef<TaskSchedulingInfo>>> {
-        Ok(scheduler::fetch_task())
+    fn fetch_task(&self, info: RRef<TaskSchedulingInfo>) -> AlienResult<RRef<TaskSchedulingInfo>> {
+        Ok(scheduler::fetch_task(info))
     }
 
     fn dump_meta_data(&self, data: &mut SchedulerDataContainer) -> AlienResult<()> {

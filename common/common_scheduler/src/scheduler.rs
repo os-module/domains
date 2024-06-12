@@ -20,16 +20,20 @@ impl GlobalScheduler {
     }
 }
 
-impl Scheduler for GlobalScheduler {
+impl GlobalScheduler {
     fn add_task(&mut self, task_meta: RRef<TaskSchedulingInfo>) {
         self.scheduler.as_mut().unwrap().add_task(task_meta);
     }
 
-    fn fetch_task(&mut self) -> Option<RRef<TaskSchedulingInfo>> {
-        self.scheduler.as_mut().unwrap().fetch_task()
-    }
-    fn name(&self) -> &'static str {
-        self.scheduler.as_ref().unwrap().name()
+    fn fetch_task(&mut self, mut info: RRef<TaskSchedulingInfo>) -> RRef<TaskSchedulingInfo> {
+        let res = self.scheduler.as_mut().unwrap().fetch_task();
+        match res {
+            Some(task) => task,
+            None => {
+                info.tid = usize::MAX;
+                info
+            }
+        }
     }
 }
 
@@ -44,6 +48,6 @@ pub fn add_task(task_meta: RRef<TaskSchedulingInfo>) {
     GLOBAL_SCHEDULER.lock().add_task(task_meta);
 }
 
-pub fn fetch_task() -> Option<RRef<TaskSchedulingInfo>> {
-    GLOBAL_SCHEDULER.lock().fetch_task()
+pub fn fetch_task(info: RRef<TaskSchedulingInfo>) -> RRef<TaskSchedulingInfo> {
+    GLOBAL_SCHEDULER.lock().fetch_task(info)
 }

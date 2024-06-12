@@ -156,9 +156,9 @@ impl VfsDomain for VfsDomainImpl {
         let res = file.write_at(offset, buf.as_slice())?;
         Ok((buf, res))
     }
-    fn vfs_write(&self, inode: InodeID, buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn vfs_write(&self, inode: InodeID, buf: &RRefVec<u8>, w_len: usize) -> AlienResult<usize> {
         let file = get_file(inode).unwrap();
-        let res = file.write(buf.as_slice())?;
+        let res = file.write(&buf.as_slice()[..w_len])?;
         Ok(res)
     }
     fn vfs_flush(&self, inode: InodeID) -> AlienResult<()> {
@@ -201,6 +201,11 @@ impl VfsDomain for VfsDomainImpl {
         let copy_len = core::cmp::min(path.len(), buf.len());
         buf.as_mut_slice()[..copy_len].copy_from_slice(&path[..copy_len]);
         Ok((buf, copy_len))
+    }
+    fn vfs_ftruncate(&self, inode: InodeID, len: u64) -> AlienResult<()> {
+        let file = get_file(inode).unwrap();
+        file.truncate(len)?;
+        Ok(())
     }
 
     fn do_fcntl(&self, inode: InodeID, cmd: usize, args: usize) -> AlienResult<isize> {

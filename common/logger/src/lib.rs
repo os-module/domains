@@ -22,7 +22,7 @@ impl LogDomain for Logger {
         Ok(())
     }
 
-    fn log(&self, level: Level, msg: RRefVec<u8>) -> AlienResult<()> {
+    fn log(&self, level: Level, msg: &RRefVec<u8>) -> AlienResult<()> {
         let msg = core::str::from_utf8(msg.as_slice()).unwrap();
         let level = match level {
             Level::Error => log::Level::Error,
