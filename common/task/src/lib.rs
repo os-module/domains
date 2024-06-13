@@ -14,6 +14,7 @@ mod utils;
 mod vfs_shim;
 
 use alloc::{boxed::Box, sync::Arc};
+use core::ops::Range;
 
 use basic::{println, AlienError, AlienResult};
 use interface::{Basic, DomainType, InodeID, TaskDomain, TmpHeapInfo};
@@ -125,11 +126,6 @@ impl TaskDomain for TaskDomainImpl {
         Ok((buf, min_len))
     }
 
-    fn current_tid(&self) -> AlienResult<usize> {
-        let task = current_task().unwrap();
-        Ok(task.tid.raw())
-    }
-
     fn current_pid(&self) -> AlienResult<usize> {
         let task = current_task().unwrap();
         Ok(task.pid.raw())
@@ -233,6 +229,10 @@ impl TaskDomain for TaskDomainImpl {
 
     fn do_exit(&self, exit_code: isize) -> AlienResult<isize> {
         syscall::exit::do_exit(exit_code as i32)
+    }
+
+    fn do_mmap_device(&self, phy_addr_range: Range<usize>) -> AlienResult<isize> {
+        syscall::mmap::do_mmap_device(phy_addr_range)
     }
 }
 

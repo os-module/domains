@@ -2,6 +2,7 @@
 #![forbid(unsafe_code)]
 mod domain;
 mod fs;
+mod gui;
 mod mm;
 mod signal;
 mod socket;
@@ -12,13 +13,13 @@ mod time;
 extern crate alloc;
 extern crate log;
 
-use alloc::{boxed::Box, format, sync::Arc};
+use alloc::{boxed::Box, format, sync::Arc, vec, vec::Vec};
 
 use basic::{println, AlienResult};
 use interface::*;
 use rref::RRefVec;
 
-use crate::{domain::*, fs::*, mm::*, signal::*, socket::*, system::*, task::*, time::*};
+use crate::{domain::*, fs::*, gui::*, mm::*, signal::*, socket::*, system::*, task::*, time::*};
 
 #[derive(Debug)]
 struct SysCallDomainImpl {
@@ -26,6 +27,8 @@ struct SysCallDomainImpl {
     task_domain: Arc<dyn TaskDomain>,
     logger: Arc<dyn LogDomain>,
     net_stack_domain: Arc<dyn NetDomain>,
+    gpu_domain: Arc<dyn GpuDomain>,
+    input_domain: Vec<Arc<dyn BufInputDomain>>,
 }
 
 impl SysCallDomainImpl {
@@ -34,12 +37,16 @@ impl SysCallDomainImpl {
         task_domain: Arc<dyn TaskDomain>,
         logger: Arc<dyn LogDomain>,
         net_stack_domain: Arc<dyn NetDomain>,
+        gpu_domain: Arc<dyn GpuDomain>,
+        input_domain: Vec<Arc<dyn BufInputDomain>>,
     ) -> Self {
         Self {
             vfs_domain,
             task_domain,
             logger,
             net_stack_domain,
+            gpu_domain,
+            input_domain,
         }
     }
 }
@@ -83,6 +90,13 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[2],
             ),
             29 => sys_ioctl(
+                &self.vfs_domain,
+                &self.task_domain,
+                args[0],
+                args[1],
+                args[2],
+            ),
+            34 => sys_mkdirat(
                 &self.vfs_domain,
                 &self.task_domain,
                 args[0],
@@ -205,13 +219,14 @@ impl SysCallDomain for SysCallDomainImpl {
             155 => sys_get_pgid(&self.task_domain),
             157 => sys_set_sid(&self.task_domain),
             160 => sys_uname(&self.task_domain, args[0]),
+            169 => sys_get_time_of_day(&self.task_domain, args[0]),
             172 => sys_get_pid(&self.task_domain),
             173 => sys_get_ppid(&self.task_domain),
             174 => sys_getuid(&self.task_domain),
             175 => sys_get_euid(&self.task_domain),
             176 => sys_get_gid(&self.task_domain),
             177 => sys_get_egid(&self.task_domain),
-            178 => sys_get_tid(&self.task_domain),
+            178 => sys_get_tid(),
             198 => sys_socket(
                 &self.task_domain,
                 &self.vfs_domain,
@@ -363,6 +378,14 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[3],
                 args[4] as u8,
             ),
+            2000 => sys_framebuffer(&self.task_domain, &self.gpu_domain),
+            2001 => sys_framebuffer_flush(&self.gpu_domain),
+            2002 => sys_event_get(
+                &self.task_domain,
+                self.input_domain.as_slice(),
+                args[0],
+                args[1],
+            ),
             _ => panic!("syscall [{}: {}] not found", syscall_id, syscall_name),
         }
     }
@@ -392,10 +415,35 @@ pub fn main() -> Box<dyn SysCallDomain> {
         _ => panic!("net_stack domain not found"),
     };
 
+    let gpu_domain = basic::get_domain("virtio_mmio_gpu").unwrap();
+    let gpu_domain = match gpu_domain {
+        DomainType::GpuDomain(gpu_domain) => gpu_domain,
+        _ => panic!("gpu domain not found"),
+    };
+
+    let mut input_domains = vec![];
+    let mut count = 1;
+    loop {
+        let name = format!("buf_input-{}", count);
+        let buf_input_domain = basic::get_domain(&name);
+        match buf_input_domain {
+            Some(DomainType::BufInputDomain(buf_input_domain)) => {
+                input_domains.push(buf_input_domain);
+                count += 1;
+            }
+            _ => {
+                break;
+            }
+        }
+    }
+    println!("syscall get {} input domain", count - 1);
+
     Box::new(SysCallDomainImpl::new(
         vfs_domain,
         task_domain,
         logger,
         net_stack_domain,
+        gpu_domain,
+        input_domains,
     ))
 }

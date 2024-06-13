@@ -1,7 +1,8 @@
 use alloc::sync::Arc;
 
 use basic::{
-    constants::time::{ClockId, TimeSpec},
+    constants::time::{ClockId, TimeSpec, TimeVal},
+    time::TimeNow,
     AlienError, AlienResult,
 };
 use interface::TaskDomain;
@@ -27,4 +28,10 @@ pub fn sys_clock_gettime(
             panic!("clock_get_time: clock_id {:?} not supported", id);
         }
     }
+}
+
+pub fn sys_get_time_of_day(task_domain: &Arc<dyn TaskDomain>, tv: usize) -> AlienResult<isize> {
+    let time = TimeVal::now();
+    task_domain.write_val_to_user(tv, &time)?;
+    Ok(0)
 }

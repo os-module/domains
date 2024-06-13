@@ -7,8 +7,12 @@ use alloc::{boxed::Box, collections::BTreeMap, sync::Arc};
 use core::sync::atomic::AtomicU64;
 
 use basic::{
-    constants::io::{Fcntl64Cmd, OpenFlags, PollEvents, SeekFrom},
+    constants::{
+        io::{Fcntl64Cmd, OpenFlags, PollEvents, SeekFrom},
+        time::TimeSpec,
+    },
     sync::RwLock,
+    time::TimeNow,
     AlienError, AlienResult,
 };
 use interface::{Basic, DomainType, InodeID, NetDomain, SocketID, VfsDomain};
@@ -18,7 +22,7 @@ use spin::Once;
 use vfscore::{
     dentry::VfsDentry,
     path::VfsPath,
-    utils::{VfsFileStat, VfsInodeMode, VfsNodeType, VfsPollEvents},
+    utils::{VfsFileStat, VfsInodeMode, VfsNodeType, VfsPollEvents, VfsTime, VfsTimeSpec},
 };
 
 use crate::{
@@ -101,12 +105,13 @@ impl VfsDomain for VfsDomainImpl {
         &self,
         root: InodeID,
         path: &RRefVec<u8>,
+        path_len: usize,
         mode: u32,
         open_flags: usize,
     ) -> AlienResult<InodeID> {
         let start = get_file(root).ok_or(AlienError::EINVAL)?;
         let root = system_root_fs();
-        let path = core::str::from_utf8(path.as_slice()).unwrap();
+        let path = core::str::from_utf8(&path.as_slice()[..path_len]).unwrap();
         let open_flags = OpenFlags::from_bits_truncate(open_flags);
         let mode = if open_flags.contains(OpenFlags::O_CREAT) {
             Some(VfsInodeMode::from_bits_truncate(mode))
@@ -205,6 +210,28 @@ impl VfsDomain for VfsDomainImpl {
     fn vfs_ftruncate(&self, inode: InodeID, len: u64) -> AlienResult<()> {
         let file = get_file(inode).unwrap();
         file.truncate(len)?;
+        Ok(())
+    }
+
+    fn vfs_update_atime(&self, inode: InodeID, atime_sec: u64, atime_nano: u64) -> AlienResult<()> {
+        let file = get_file(inode).unwrap();
+        let time = VfsTimeSpec::new(atime_sec, atime_nano);
+        let now = TimeSpec::now();
+        let now = VfsTimeSpec::new(now.tv_sec as u64, now.tv_nsec as u64);
+        file.dentry()
+            .inode()?
+            .update_time(VfsTime::AccessTime(time), now)?;
+        Ok(())
+    }
+
+    fn vfs_update_mtime(&self, inode: InodeID, mtime_sec: u64, mtime_nano: u64) -> AlienResult<()> {
+        let file = get_file(inode).unwrap();
+        let time = VfsTimeSpec::new(mtime_sec, mtime_nano);
+        let now = TimeSpec::now();
+        let now = VfsTimeSpec::new(now.tv_sec as u64, now.tv_nsec as u64);
+        file.dentry()
+            .inode()?
+            .update_time(VfsTime::ModifiedTime(time), now)?;
         Ok(())
     }
 

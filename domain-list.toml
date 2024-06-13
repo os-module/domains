@@ -45,6 +45,7 @@ init_members = [
     "uart16550",
     "virtio_mmio_block",
     "virtio_mmio_net",
+    "virtio_mmio_input",
     "devfs",
     "fatfs",
     "pipefs",

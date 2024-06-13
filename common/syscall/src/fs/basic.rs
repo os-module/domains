@@ -35,11 +35,8 @@ pub fn sys_openat(
         "<sys_openat> path: {:?} flags: {:?} mode: {:?}",
         path, flags, mode
     );
-
     let (_, current_root) = user_path_at(task_domain, dirfd as isize, path)?;
-
-    let path = RRefVec::from_slice(&path.as_bytes());
-    let file = vfs.vfs_open(current_root, &path, mode as _, flags as _)?;
+    let file = vfs.vfs_open(current_root, &tmp_buf, len, mode as _, flags as _)?;
     let fd = task_domain.add_fd(file)?;
     Ok(fd as isize)
 }
@@ -173,10 +170,9 @@ pub fn sys_fstatat(
         path_ptr, path, len, flag
     );
     let (_, current_root) = user_path_at(task_domain, dirfd as isize, path)?;
-    let path = RRefVec::from_slice(&path.as_bytes());
     // todo!(VfsFileStat == FileStat)
     let attr = RRef::new(VfsFileStat::default());
-    let file = vfs.vfs_open(current_root, &path, 0, 0)?;
+    let file = vfs.vfs_open(current_root, &tmp_buf, len, 0, 0)?;
     let stat = vfs.vfs_getattr(file, attr)?;
     let file_stat = FileStat::from(*stat);
     debug!("<sys_fstatat> file_stat: {:?}", file_stat);
@@ -218,8 +214,7 @@ pub fn sys_faccessat(
         path, flag, mode
     );
     let (_, current_root) = user_path_at(task_domain, dirfd as isize, path)?;
-    let path = RRefVec::from_slice(&path.as_bytes());
-    let id = vfs.vfs_open(current_root, &path, 0, 0)?;
+    let id = vfs.vfs_open(current_root, &tmp_buf, len, 0, 0)?;
     info!("<sys_faccessat> id: {:?}", id);
     vfs.vfs_close(id)?;
     Ok(0)
@@ -256,48 +251,54 @@ pub fn sys_fstat(
 }
 
 pub fn sys_utimensat(
-    _vfs: &Arc<dyn VfsDomain>,
-    _task_domain: &Arc<dyn TaskDomain>,
-    _dirfd: usize,
-    _path_ptr: usize,
-    _times_ptr: usize,
+    vfs: &Arc<dyn VfsDomain>,
+    task_domain: &Arc<dyn TaskDomain>,
+    dirfd: usize,
+    path_ptr: usize,
+    times_ptr: usize,
     _flags: usize,
 ) -> AlienResult<isize> {
     const UTIME_NOW: usize = 0x3fffffff;
-    /// ignore
-    #[allow(dead_code)]
     const UTIME_OMIT: usize = 0x3ffffffe;
-    // let mut tmp_buf = RRefVec::<u8>::new(0, 256);
-    // let len;
-    // (tmp_buf, len) = task_domain.read_string_from_user(path, tmp_buf)?;
-    // let path = core::str::from_utf8(&tmp_buf.as_slice()[..len]).unwrap();
-    // let flag = UtimensatFlags::from_bits_truncate(flags as u32);
-    // info!(
-    //     "<sys_utimensat> path: {:?} times: {:#x?} flags: {:?}",
-    //     path, times, flag
-    // );
-    // let (_, current_root) = user_path_at(task_domain, dirfd as isize, path)?;
-    // let path = RRefVec::from_slice(&path.as_bytes());
-    // let inode_id = vfs.vfs_open(current_root, &path, 0, 0)?;
-    // let mut atime = TimeSpec::new(0, 0);
-    // let mut mtime = TimeSpec::new(0, 0);
-    // task_domain.copy_from_user(times as *const TimeSpec, &mut atime)?;
-    // task_domain.copy_from_user((times as *const TimeSpec).add(1), &mut mtime)?;
-    // info!(
-    //     "utimensat: {:?} {:?} {:?} {:?}",
-    //     fd as isize, path, atime, mtime
-    // );
-    // if atime.tv_nsec == UTIME_NOW {
-    //     vfs.vfs_inode_update_time(inode_id, VfsTime::AccessTime(TimeSpec::now().into()))?;
-    // } else if atime.tv_nsec != UTIME_OMIT {
-    //     vfs.vfs_inode_update_time(inode_id, VfsTime::AccessTime(atime.into()))?;
-    // }
-    // if mtime.tv_nsec == UTIME_NOW {
-    //     vfs.vfs_inode_update_time(inode_id, VfsTime::ModifiedTime(TimeSpec::now().into()))?;
-    // } else if mtime.tv_nsec != UTIME_OMIT {
-    //     vfs.vfs_inode_update_time(inode_id, VfsTime::ModifiedTime(mtime.into()))?;
-    // }
-    unimplemented!()
+    info!(
+        "<utimensat> dirfd: {:?} path_ptr: {:#x} times_ptr: {:#x}",
+        dirfd as isize, path_ptr, times_ptr
+    );
+    let tmp_buf = RRefVec::<u8>::new(0, 256);
+    let (tmp_buf, len) = task_domain.read_string_from_user(path_ptr, tmp_buf)?;
+    let path = core::str::from_utf8(&tmp_buf.as_slice()[..len]).unwrap();
+    info!("<utimensat>: path: {:?}", path);
+    let (_, current_root) = user_path_at(task_domain, dirfd as isize, path)?;
+    let file_inode = vfs.vfs_open(current_root, &tmp_buf, len, 0, 0)?;
+
+    info!("<utimensat> inode id: {:?}", file_inode);
+    if times_ptr == 0 {
+        let time_now = TimeSpec::now();
+        info!("set all time to time_now: {:?}", time_now);
+        vfs.vfs_update_atime(file_inode, time_now.tv_sec as u64, time_now.tv_nsec as u64)?;
+        vfs.vfs_update_mtime(file_inode, time_now.tv_sec as u64, time_now.tv_nsec as u64)?;
+    } else {
+        let atime = task_domain.read_val_from_user::<TimeSpec>(times_ptr)?;
+        let mtime = task_domain
+            .read_val_from_user::<TimeSpec>(times_ptr + core::mem::size_of::<TimeSpec>())?;
+        info!("set atime: {:?}, mtime: {:?}", atime, mtime);
+        let now = TimeSpec::now();
+        if atime.tv_nsec == UTIME_NOW {
+            vfs.vfs_update_atime(file_inode, now.tv_sec as u64, now.tv_nsec as u64)?;
+        } else if atime.tv_nsec == UTIME_OMIT {
+            // do nothing
+        } else {
+            vfs.vfs_update_atime(file_inode, atime.tv_sec as u64, atime.tv_nsec as u64)?;
+        };
+        if mtime.tv_nsec == UTIME_NOW {
+            vfs.vfs_update_mtime(file_inode, now.tv_sec as u64, now.tv_nsec as u64)?;
+        } else if mtime.tv_nsec == UTIME_OMIT {
+            // do nothing
+        } else {
+            vfs.vfs_update_mtime(file_inode, mtime.tv_sec as u64, mtime.tv_nsec as u64)?;
+        };
+    }
+    Ok(0)
 }
 
 pub fn sys_sendfile(
@@ -567,8 +568,7 @@ pub fn sys_chdir(
     let path = core::str::from_utf8(&tmp_buf.as_slice()[..len]).unwrap();
     info!("<sys_chdir> path: {:?}", path);
     let (_, current_root) = user_path_at(task_domain, AT_FDCWD, path)?;
-    let path = RRefVec::from_slice(&path.as_bytes());
-    let id = vfs.vfs_open(current_root, &path, 0, 0)?;
+    let id = vfs.vfs_open(current_root, &tmp_buf, len, 0, 0)?;
     task_domain.set_cwd(id)?;
     Ok(0)
 }
@@ -589,4 +589,28 @@ pub fn sys_getcwd(
     info!("<sys_getcwd> buf: {:#x} size: {:?} r: {:?}", buf, size, r);
     task_domain.copy_to_user(buf, &tmp_buf.as_slice()[..r])?;
     Ok(r as isize)
+}
+
+pub fn sys_mkdirat(
+    vfs: &Arc<dyn VfsDomain>,
+    task_domain: &Arc<dyn TaskDomain>,
+    dirfd: usize,
+    path_ptr: usize,
+    mode: usize,
+) -> AlienResult<isize> {
+    let tmp_buf = RRefVec::<u8>::new(0, 256);
+    let (tmp_buf, len) = task_domain.read_string_from_user(path_ptr, tmp_buf)?;
+    let mut mode = InodeMode::from_bits_truncate(mode as u32);
+    let path = core::str::from_utf8(&tmp_buf.as_slice()[..len]).unwrap();
+    mode |= InodeMode::DIR;
+    info!("<sys_mkdirat> path: {:?},  mode: {:?}", path, mode);
+    let (_, current_root) = user_path_at(task_domain, dirfd as isize, path)?;
+    let _id = vfs.vfs_open(
+        current_root,
+        &tmp_buf,
+        len,
+        mode.bits(),
+        OpenFlags::O_CREAT.bits(),
+    )?;
+    Ok(0)
 }

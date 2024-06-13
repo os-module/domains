@@ -84,8 +84,8 @@ pub fn sys_get_egid(_task_domain: &Arc<dyn TaskDomain>) -> AlienResult<isize> {
     Ok(0)
 }
 
-pub fn sys_get_tid(task_domain: &Arc<dyn TaskDomain>) -> AlienResult<isize> {
-    task_domain.current_tid().map(|tid| tid as isize)
+pub fn sys_get_tid() -> AlienResult<isize> {
+    basic::current_tid().map(|tid| tid.unwrap() as isize)
 }
 
 pub fn sys_exit(task_domain: &Arc<dyn TaskDomain>, status: usize) -> AlienResult<isize> {

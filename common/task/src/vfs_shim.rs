@@ -60,19 +60,19 @@ pub fn read_all(file_name: &str, buf: &mut Vec<u8>) -> bool {
     } else {
         user_path_at(AT_FDCWD, file_name).unwrap()
     };
-
     let name = RRefVec::from_slice(file_name.as_bytes());
-    let res = VFS_DOMAIN
-        .get()
-        .unwrap()
-        .vfs_open(path.1, &name, 0, OpenFlags::O_RDONLY.bits());
-
+    let res = VFS_DOMAIN.get().unwrap().vfs_open(
+        path.1,
+        &name,
+        name.len(),
+        0,
+        OpenFlags::O_RDONLY.bits(),
+    );
     if res.is_err() {
         info!("open file {} failed, err:{:?}", file_name, res.err());
         return false;
     }
     let shim_file = ShimFile::new(res.unwrap());
-
     let size = shim_file.get_attr().unwrap().st_size;
     let mut offset = 0;
     let mut tmp = RRefVec::new(0, 512);

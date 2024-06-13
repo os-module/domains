@@ -1,4 +1,5 @@
 use alloc::{boxed::Box, vec};
+use core::ops::Range;
 
 use basic::{
     config::FRAME_SIZE,
@@ -11,6 +12,39 @@ use page_table::MappingFlags;
 use ptable::{PhysPage, VmArea, VmAreaType};
 
 use crate::{elf::FrameTrackerWrapper, processor::current_task, resource::MMapRegion};
+
+pub fn do_mmap_device(phy_addr_range: Range<usize>) -> AlienResult<isize> {
+    let prot = ProtFlags::PROT_READ | ProtFlags::PROT_WRITE;
+    let task = current_task().unwrap();
+    let mut mmap = task.mmap.lock();
+    let len = phy_addr_range.len();
+    let v_range = mmap.alloc(len);
+    let region = MMapRegion::new(
+        v_range.start,
+        len,
+        v_range.end - v_range.start,
+        prot,
+        MMapFlags::MAP_ANONYMOUS,
+        None,
+        0,
+    );
+    mmap.add_region(region);
+    let start = v_range.start;
+    let map_flags = from_prot(prot);
+    let mut phy_frames = vec![];
+    let mut map_start = phy_addr_range.start;
+    for _ in 0..len / FRAME_SIZE {
+        let frame = FrameTracker::from_phy_range(map_start..map_start + FRAME_SIZE);
+        map_start += FRAME_SIZE;
+        phy_frames.push(Box::new(FrameTrackerWrapper(frame)) as Box<dyn PhysPage>);
+    }
+    let area = VmArea::new(v_range, map_flags, phy_frames);
+    task.address_space
+        .lock()
+        .map(VmAreaType::VmArea(area))
+        .unwrap();
+    Ok(start as isize)
+}
 
 pub fn do_mmap(
     start: usize,

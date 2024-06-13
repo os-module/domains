@@ -5,9 +5,8 @@ extern crate alloc;
 use alloc::boxed::Box;
 use core::{fmt::Debug, ops::Range};
 
-use basic::{io::SafeIORegion, sync::Mutex, AlienResult};
+use basic::{io::SafeIORegion, println, sync::Mutex, AlienError, AlienResult};
 use interface::{Basic, DeviceBase, GpuDomain};
-use log::info;
 use rref::RRefVec;
 use spin::Once;
 use virtio_drivers::{device::gpu::VirtIOGpu, transport::mmio::MmioTransport};
@@ -16,7 +15,17 @@ use virtio_mmio_common::{HalImpl, SafeIORW};
 static GPU: Once<Mutex<VirtIOGpu<HalImpl, MmioTransport>>> = Once::new();
 
 #[derive(Debug)]
-pub struct GPUDomain;
+pub struct GPUDomain {
+    buffer_range: Once<Range<usize>>,
+}
+
+impl GPUDomain {
+    pub fn new() -> Self {
+        Self {
+            buffer_range: Once::new(),
+        }
+    }
+}
 
 impl Basic for GPUDomain {}
 
@@ -29,7 +38,7 @@ impl DeviceBase for GPUDomain {
 impl GpuDomain for GPUDomain {
     fn init(&self, address_range: &Range<usize>) -> AlienResult<()> {
         let virtio_gpu_addr = address_range.start;
-        basic::println!("virtio_gpu_addr: {:#x?}", virtio_gpu_addr);
+        println!("virtio_gpu_addr: {:#x?}", virtio_gpu_addr);
         let io_region = SafeIORW(SafeIORegion::from(address_range.clone()));
         let transport = MmioTransport::new(Box::new(io_region)).unwrap();
         let mut gpu = VirtIOGpu::<HalImpl, MmioTransport>::new(transport)
@@ -38,17 +47,12 @@ impl GpuDomain for GPUDomain {
         let (width, height) = gpu.resolution().expect("failed to get resolution");
         let width = width as usize;
         let height = height as usize;
-        info!("GPU resolution is {}x{}", width, height);
+        println!("GPU resolution is {}x{}", width, height);
         let fb = gpu.setup_framebuffer().expect("failed to get fb");
-        for y in 0..height {
-            for x in 0..width {
-                let idx = (y * width + x) * 4;
-                fb[idx] = x as u8;
-                fb[idx + 1] = y as u8;
-                fb[idx + 2] = (x + y) as u8;
-            }
-        }
-        gpu.flush().expect("failed to flush");
+        let buffer_range = fb.as_ptr() as usize..(fb.as_ptr() as usize + fb.len());
+        gpu.move_cursor(50, 50).unwrap();
+        gpu.flush().unwrap();
+        self.buffer_range.call_once(|| buffer_range);
         GPU.call_once(|| Mutex::new(gpu));
         Ok(())
     }
@@ -62,8 +66,15 @@ impl GpuDomain for GPUDomain {
     fn fill(&self, _offset: u32, _buf: &RRefVec<u8>) -> AlienResult<usize> {
         todo!()
     }
+
+    fn buffer_range(&self) -> AlienResult<Range<usize>> {
+        self.buffer_range
+            .get()
+            .ok_or(AlienError::EINVAL)
+            .map(|r| r.clone())
+    }
 }
 
 pub fn main() -> Box<dyn GpuDomain> {
-    Box::new(GPUDomain)
+    Box::new(GPUDomain::new())
 }
