@@ -15,7 +15,7 @@ extern crate log;
 
 use alloc::{boxed::Box, format, sync::Arc, vec, vec::Vec};
 
-use basic::{println, AlienResult};
+use basic::{constants::*, println, AlienResult};
 use interface::*;
 use rref::RRefVec;
 
@@ -27,7 +27,7 @@ struct SysCallDomainImpl {
     task_domain: Arc<dyn TaskDomain>,
     logger: Arc<dyn LogDomain>,
     net_stack_domain: Arc<dyn NetDomain>,
-    gpu_domain: Arc<dyn GpuDomain>,
+    gpu_domain: Option<Arc<dyn GpuDomain>>,
     input_domain: Vec<Arc<dyn BufInputDomain>>,
 }
 
@@ -37,7 +37,7 @@ impl SysCallDomainImpl {
         task_domain: Arc<dyn TaskDomain>,
         logger: Arc<dyn LogDomain>,
         net_stack_domain: Arc<dyn NetDomain>,
-        gpu_domain: Arc<dyn GpuDomain>,
+        gpu_domain: Option<Arc<dyn GpuDomain>>,
         input_domain: Vec<Arc<dyn BufInputDomain>>,
     ) -> Self {
         Self {
@@ -65,46 +65,50 @@ impl SysCallDomain for SysCallDomainImpl {
     }
 
     fn call(&self, syscall_id: usize, args: [usize; 6]) -> AlienResult<isize> {
-        let syscall_name = basic::constants::syscall_name(syscall_id);
+        let syscall_name = syscall_name(syscall_id);
         // let pid = self.task_domain.current_pid().unwrap();
-        // let tid = self.task_domain.current_tid().unwrap();
-        // log::trace!("[pid:{} tid:{}] syscall: {} {:?}",0,0, syscall_name, args);
-
-        if syscall_id == 61 {
-            let log_info = format!("syscall: {}", syscall_name);
+        let tid = basic::current_tid()?;
+        // if syscall_id != SYSCALL_YIELD &&  syscall_id != SYSCALL_WAIT4{
+        //     println!("[tid:{:?}] syscall: {}",tid, syscall_name,);
+        // }
+        if syscall_id == 2003 {
+            let log_info = format!("[tid:{:?}] syscall: 2003", tid);
             self.logger.log(
                 interface::Level::Info,
                 &RRefVec::from_slice(log_info.as_bytes()),
             )?;
+            return Ok(0);
         }
 
         match syscall_id {
-            17 => sys_getcwd(&self.vfs_domain, &self.task_domain, args[0], args[1]),
-            23 => sys_dup(&self.task_domain, args[0]),
-            24 => sys_dup2(&self.task_domain, args[0], args[1]),
-            25 => sys_fcntl(
+            SYSCALL_GETCWD => sys_getcwd(&self.vfs_domain, &self.task_domain, args[0], args[1]),
+            SYSCALL_DUP => sys_dup(&self.task_domain, args[0]),
+            SYSCALL_DUP3 => sys_dup2(&self.task_domain, args[0], args[1]),
+            SYSCALL_FCNTL => sys_fcntl(
                 &self.vfs_domain,
                 &self.task_domain,
                 args[0],
                 args[1],
                 args[2],
             ),
-            29 => sys_ioctl(
+            SYSCALL_IOCTL => sys_ioctl(
                 &self.vfs_domain,
                 &self.task_domain,
                 args[0],
                 args[1],
                 args[2],
             ),
-            34 => sys_mkdirat(
+            SYSCALL_MKDIRAT => sys_mkdirat(
                 &self.vfs_domain,
                 &self.task_domain,
                 args[0],
                 args[1],
                 args[2],
             ),
-            46 => sys_ftruncate(&self.vfs_domain, &self.task_domain, args[0], args[1]),
-            48 => sys_faccessat(
+            SYSCALL_FTRUNCATE => {
+                sys_ftruncate(&self.vfs_domain, &self.task_domain, args[0], args[1])
+            }
+            SYSCALL_FACCESSAT => sys_faccessat(
                 &self.vfs_domain,
                 &self.task_domain,
                 args[0],
@@ -112,8 +116,8 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[2],
                 args[3],
             ),
-            49 => sys_chdir(&self.vfs_domain, &self.task_domain, args[0]),
-            56 => sys_openat(
+            SYSCALL_CHDIR => sys_chdir(&self.vfs_domain, &self.task_domain, args[0]),
+            SYSCALL_OPENAT => sys_openat(
                 &self.vfs_domain,
                 &self.task_domain,
                 args[0],
@@ -121,51 +125,51 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[2],
                 args[3],
             ),
-            57 => sys_close(&self.vfs_domain, &self.task_domain, args[0]),
-            59 => sys_pipe2(&self.task_domain, &self.vfs_domain, args[0], args[1]),
-            61 => sys_getdents64(
+            SYSCALL_CLOSE => sys_close(&self.vfs_domain, &self.task_domain, args[0]),
+            SYSCALL_PIPE2 => sys_pipe2(&self.task_domain, &self.vfs_domain, args[0], args[1]),
+            SYSCALL_GETDENTS64 => sys_getdents64(
                 &self.vfs_domain,
                 &self.task_domain,
                 args[0],
                 args[1],
                 args[2],
             ),
-            62 => sys_lseek(
+            SYSCALL_LSEEK => sys_lseek(
                 &self.vfs_domain,
                 &self.task_domain,
                 args[0],
                 args[1],
                 args[2],
             ),
-            63 => sys_read(
+            SYSCALL_READ => sys_read(
                 &self.vfs_domain,
                 &self.task_domain,
                 args[0],
                 args[1],
                 args[2],
             ),
-            64 => sys_write(
+            SYSCALL_WRITE => sys_write(
                 &self.vfs_domain,
                 &self.task_domain,
                 args[0],
                 args[1] as *const u8,
                 args[2],
             ),
-            65 => sys_readv(
+            SYSCALL_READV => sys_readv(
                 &self.vfs_domain,
                 &self.task_domain,
                 args[0],
                 args[1],
                 args[2],
             ),
-            66 => sys_writev(
+            SYSCALL_WRITEV => sys_writev(
                 &self.vfs_domain,
                 &self.task_domain,
                 args[0],
                 args[1],
                 args[2],
             ),
-            71 => sys_sendfile(
+            SYSCALL_SENDFILE => sys_sendfile(
                 &self.vfs_domain,
                 &self.task_domain,
                 args[0],
@@ -173,7 +177,7 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[2],
                 args[3],
             ),
-            72 => sys_pselect6(
+            SYSCALL_PSELECT6 => sys_pselect6(
                 &self.vfs_domain,
                 &self.task_domain,
                 args[0],
@@ -183,7 +187,7 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[4],
                 args[5],
             ),
-            73 => sys_ppoll(
+            SYSCALL_PPOLL => sys_ppoll(
                 &self.vfs_domain,
                 &self.task_domain,
                 args[0],
@@ -191,7 +195,7 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[2],
                 args[3],
             ),
-            79 => sys_fstatat(
+            SYSCALL_FSTATAT => sys_fstatat(
                 &self.vfs_domain,
                 &self.task_domain,
                 args[0],
@@ -199,8 +203,8 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[2],
                 args[3],
             ),
-            80 => sys_fstat(&self.vfs_domain, &self.task_domain, args[0], args[1]),
-            88 => sys_utimensat(
+            SYSCALL_FSTAT => sys_fstat(&self.vfs_domain, &self.task_domain, args[0], args[1]),
+            SYSCALL_UTIMENSAT => sys_utimensat(
                 &self.vfs_domain,
                 &self.task_domain,
                 args[0],
@@ -208,26 +212,28 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[2],
                 args[3],
             ),
-            93 => sys_exit(&self.task_domain, args[0]),
-            94 => sys_exit_group(&self.task_domain, args[0]),
-            96 => sys_set_tid_address(&self.task_domain, args[0]),
-            113 => sys_clock_gettime(&self.task_domain, args[0], args[1]),
-            124 => sys_yield(),
-            134 => sys_sigaction(&self.task_domain, args[0], args[1], args[2]),
-            135 => sys_sigprocmask(&self.task_domain, args[0], args[1], args[2], args[3]),
-            154 => sys_set_pgid(&self.task_domain),
-            155 => sys_get_pgid(&self.task_domain),
-            157 => sys_set_sid(&self.task_domain),
-            160 => sys_uname(&self.task_domain, args[0]),
-            169 => sys_get_time_of_day(&self.task_domain, args[0]),
-            172 => sys_get_pid(&self.task_domain),
-            173 => sys_get_ppid(&self.task_domain),
-            174 => sys_getuid(&self.task_domain),
-            175 => sys_get_euid(&self.task_domain),
-            176 => sys_get_gid(&self.task_domain),
-            177 => sys_get_egid(&self.task_domain),
-            178 => sys_get_tid(),
-            198 => sys_socket(
+            SYSCALL_EXIT => sys_exit(&self.task_domain, args[0]),
+            SYSCALL_EXIT_GROUP => sys_exit_group(&self.task_domain, args[0]),
+            SYSCALL_SET_TID_ADDRESS => sys_set_tid_address(&self.task_domain, args[0]),
+            SYSCALL_CLOCK_GETTIME => sys_clock_gettime(&self.task_domain, args[0], args[1]),
+            SYSCALL_YIELD => sys_yield(),
+            SYSCALL_SIGACTION => sys_sigaction(&self.task_domain, args[0], args[1], args[2]),
+            SYSCALL_SIGPROCMASK => {
+                sys_sigprocmask(&self.task_domain, args[0], args[1], args[2], args[3])
+            }
+            SYSCALL_SETPGID => sys_set_pgid(&self.task_domain),
+            SYSCALL_GETPGID => sys_get_pgid(&self.task_domain),
+            SYSCALL_SETSID => sys_set_sid(&self.task_domain),
+            SYSCALL_UNAME => sys_uname(&self.task_domain, args[0]),
+            SYSCALL_GET_TIME_OF_DAY => sys_get_time_of_day(&self.task_domain, args[0]),
+            SYSCALL_GETPID => sys_get_pid(&self.task_domain),
+            SYSCALL_GETPPID => sys_get_ppid(&self.task_domain),
+            SYSCALL_GETUID => sys_getuid(&self.task_domain),
+            SYSCALL_GETEUID => sys_get_euid(&self.task_domain),
+            SYSCALL_GETGID => sys_get_gid(&self.task_domain),
+            SYSCALL_GETEGID => sys_get_egid(&self.task_domain),
+            SYSCALL_GETTID => sys_get_tid(),
+            SYSCALL_SOCKET => sys_socket(
                 &self.task_domain,
                 &self.vfs_domain,
                 &self.net_stack_domain,
@@ -244,7 +250,7 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[2],
                 args[3],
             ),
-            200 => sys_bind(
+            SYSCALL_BIND => sys_bind(
                 &self.task_domain,
                 &self.vfs_domain,
                 &self.net_stack_domain,
@@ -252,22 +258,14 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[1],
                 args[2],
             ),
-            201 => sys_listen(
+            SYSCALL_LISTEN => sys_listen(
                 &self.task_domain,
                 &self.vfs_domain,
                 &self.net_stack_domain,
                 args[0],
                 args[1],
             ),
-            202 => sys_accept(
-                &self.task_domain,
-                &self.vfs_domain,
-                &self.net_stack_domain,
-                args[0],
-                args[1],
-                args[2],
-            ),
-            203 => sys_connect(
+            SYSCALL_ACCEPT => sys_accept(
                 &self.task_domain,
                 &self.vfs_domain,
                 &self.net_stack_domain,
@@ -275,7 +273,7 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[1],
                 args[2],
             ),
-            204 => sys_getsockname(
+            SYSCALL_CONNECT => sys_connect(
                 &self.task_domain,
                 &self.vfs_domain,
                 &self.net_stack_domain,
@@ -283,7 +281,7 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[1],
                 args[2],
             ),
-            205 => sys_getpeername(
+            SYSCALL_GETSOCKNAME => sys_getsockname(
                 &self.task_domain,
                 &self.vfs_domain,
                 &self.net_stack_domain,
@@ -291,18 +289,15 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[1],
                 args[2],
             ),
-            206 => sys_sendto(
+            SYSCALL_GETPEERNAME => sys_getpeername(
                 &self.task_domain,
                 &self.vfs_domain,
                 &self.net_stack_domain,
                 args[0],
                 args[1],
                 args[2],
-                args[3],
-                args[4],
-                args[5],
             ),
-            207 => sys_recvfrom(
+            SYSCALL_SENDTO => sys_sendto(
                 &self.task_domain,
                 &self.vfs_domain,
                 &self.net_stack_domain,
@@ -313,7 +308,18 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[4],
                 args[5],
             ),
-            208 => sys_set_socket_opt(
+            SYSCALL_RECVFROM => sys_recvfrom(
+                &self.task_domain,
+                &self.vfs_domain,
+                &self.net_stack_domain,
+                args[0],
+                args[1],
+                args[2],
+                args[3],
+                args[4],
+                args[5],
+            ),
+            SYSCALL_SETSOCKOPT => sys_set_socket_opt(
                 &self.task_domain,
                 &self.vfs_domain,
                 &self.net_stack_domain,
@@ -323,7 +329,7 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[3],
                 args[4],
             ),
-            209 => sys_get_socket_opt(
+            SYSCALL_GETSOCKOPT => sys_get_socket_opt(
                 &self.task_domain,
                 &self.vfs_domain,
                 &self.net_stack_domain,
@@ -333,16 +339,16 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[3],
                 args[4],
             ),
-            210 => sys_shutdown(
+            SYSCALL_SHUTDOWN => sys_shutdown(
                 &self.task_domain,
                 &self.vfs_domain,
                 &self.net_stack_domain,
                 args[0],
                 args[1],
             ),
-            214 => sys_brk(&self.vfs_domain, &self.task_domain, args[0]),
-            215 => sys_unmap(&self.task_domain, args[0], args[1]),
-            220 => sys_clone(
+            SYSCALL_BRK => sys_brk(&self.vfs_domain, &self.task_domain, args[0]),
+            SYSCALL_MUNMAP => sys_unmap(&self.task_domain, args[0], args[1]),
+            SYSCALL_CLONE => sys_clone(
                 &self.task_domain,
                 args[0],
                 args[1],
@@ -350,8 +356,8 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[3],
                 args[4],
             ),
-            221 => sys_execve(&self.task_domain, args[0], args[1], args[2]),
-            222 => sys_mmap(
+            SYSCALL_EXECVE => sys_execve(&self.task_domain, args[0], args[1], args[2]),
+            SYSCALL_MMAP => sys_mmap(
                 &self.task_domain,
                 args[0],
                 args[1],
@@ -360,8 +366,8 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[4],
                 args[5],
             ),
-            260 => sys_wait4(&self.task_domain, args[0], args[1], args[2], args[3]),
-            261 => sys_prlimit64(&self.task_domain, args[0], args[1], args[2], args[3]),
+            SYSCALL_WAIT4 => sys_wait4(&self.task_domain, args[0], args[1], args[2], args[3]),
+            SYSCALL_PRLIMIT => sys_prlimit64(&self.task_domain, args[0], args[1], args[2], args[3]),
             888 => sys_load_domain(
                 &self.task_domain,
                 &self.vfs_domain,
@@ -378,8 +384,8 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[3],
                 args[4] as u8,
             ),
-            2000 => sys_framebuffer(&self.task_domain, &self.gpu_domain),
-            2001 => sys_framebuffer_flush(&self.gpu_domain),
+            2000 => sys_framebuffer(&self.task_domain, self.gpu_domain.as_ref()),
+            2001 => sys_framebuffer_flush(self.gpu_domain.as_ref()),
             2002 => sys_event_get(
                 &self.task_domain,
                 self.input_domain.as_slice(),
@@ -415,10 +421,10 @@ pub fn main() -> Box<dyn SysCallDomain> {
         _ => panic!("net_stack domain not found"),
     };
 
-    let gpu_domain = basic::get_domain("virtio_mmio_gpu").unwrap();
+    let gpu_domain = basic::get_domain("virtio_mmio_gpu");
     let gpu_domain = match gpu_domain {
-        DomainType::GpuDomain(gpu_domain) => gpu_domain,
-        _ => panic!("gpu domain not found"),
+        Some(DomainType::GpuDomain(gpu_domain)) => Some(gpu_domain),
+        _ => None,
     };
 
     let mut input_domains = vec![];
@@ -437,7 +443,6 @@ pub fn main() -> Box<dyn SysCallDomain> {
         }
     }
     println!("syscall get {} input domain", count - 1);
-
     Box::new(SysCallDomainImpl::new(
         vfs_domain,
         task_domain,

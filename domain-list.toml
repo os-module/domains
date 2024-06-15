@@ -44,8 +44,6 @@ init_members = [
     "shadow_blk",
     "uart16550",
     "virtio_mmio_block",
-    "virtio_mmio_net",
-    "virtio_mmio_input",
     "devfs",
     "fatfs",
     "pipefs",
@@ -61,6 +59,7 @@ disk_members = [
     "sshadow_blk",
     "virtio_mmio_gpu",
     "virtio_mmio_input",
+    "virtio_mmio_net",
     "random_scheduler",
     "xlogger",
 ]

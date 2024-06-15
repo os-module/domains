@@ -1,10 +1,10 @@
-use alloc::sync::Arc;
+use alloc::{sync::Arc, vec::Vec};
 
 use basic::{constants::task::WaitOptions, println, AlienError, AlienResult};
 use memory_addr::VirtAddr;
 use task_meta::TaskStatus;
 
-use crate::processor::current_task;
+use crate::{processor::current_task, task::Task};
 
 pub fn do_wait4(
     pid: isize,
@@ -14,43 +14,37 @@ pub fn do_wait4(
 ) -> AlienResult<isize> {
     loop {
         let task = current_task().unwrap();
-        let wait_task = task
-            .inner()
-            .children
-            .values()
-            .find(|child| child.pid() == pid as usize || pid == -1)
-            .map(|task| task.clone());
-
-        if wait_task.is_none() {
-            return Err(AlienError::ECHILD);
-        }
+        let wait_task = filter_exit_task(&task, pid)?;
         let wait_options = WaitOptions::from_bits(options).unwrap();
-        let wait_task = wait_task.unwrap();
-        let tid = wait_task.tid();
-        if wait_task.status() == TaskStatus::Terminated && basic::is_task_exit(tid).unwrap() {
-            let exit_code = wait_task.exit_code();
-            if wait_options.contains(WaitOptions::WNOWAIT) {
-                // recycle the task later
-                if exit_code_ptr != 0 {
-                    task.write_val_to_user(VirtAddr::from(exit_code_ptr), &exit_code)?;
+        if let Some(wait_task) = wait_task {
+            let tid = wait_task.tid();
+            let pid = wait_task.pid();
+            let status = wait_task.status();
+            let is_task_exit = basic::is_task_exit(tid).unwrap();
+            if status == TaskStatus::Terminated && is_task_exit {
+                let exit_code = wait_task.exit_code();
+                if wait_options.contains(WaitOptions::WNOWAIT) {
+                    // recycle the task later
+                    if exit_code_ptr != 0 {
+                        task.write_val_to_user(VirtAddr::from(exit_code_ptr), &exit_code)?;
+                    }
+                    assert_eq!(pid, tid);
+                } else {
+                    // recycle the task now
+                    task.inner().children.remove(&pid);
+                    basic::remove_task(tid).expect("remove task failed");
+                    println!("release task [{}-{}]", pid, tid);
+                    assert_eq!(
+                        Arc::strong_count(&wait_task),
+                        1,
+                        "Father is [{}-{}], wait task is [{}-{}]",
+                        task.pid(),
+                        task.tid(),
+                        pid,
+                        tid,
+                    );
                 }
-                assert_eq!(wait_task.pid(), wait_task.tid());
-                return Ok(wait_task.pid() as _);
-            } else {
-                // recycle the task now
-                task.inner().children.remove(&wait_task.pid());
-                let tid = wait_task.tid();
-                basic::remove_task(tid).expect("remove task failed");
-                println!("release task [{}-{}]", wait_task.pid(), wait_task.tid());
-                assert_eq!(
-                    Arc::strong_count(&wait_task),
-                    1,
-                    "Father is [{}-{}], wait task is [{}-{}]",
-                    task.pid(),
-                    task.tid(),
-                    wait_task.pid(),
-                    wait_task.tid()
-                );
+                return Ok(pid as isize);
             }
         }
         if wait_options.contains(WaitOptions::WNOHANG) {
@@ -59,4 +53,21 @@ pub fn do_wait4(
             basic::yield_now().unwrap();
         }
     }
+}
+
+fn filter_exit_task(task: &Arc<Task>, pid: isize) -> AlienResult<Option<Arc<Task>>> {
+    let res = task
+        .inner()
+        .children
+        .values()
+        .filter(|child| child.pid() == pid as usize || pid == -1)
+        .cloned()
+        .collect::<Vec<_>>();
+    if res.len() == 0 {
+        return Err(AlienError::ECHILD);
+    }
+    let term_task = res
+        .iter()
+        .find(|task| task.status() == TaskStatus::Terminated);
+    Ok(term_task.cloned())
 }
