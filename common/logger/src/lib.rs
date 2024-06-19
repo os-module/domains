@@ -11,7 +11,11 @@ use rref::RRefVec;
 #[derive(Debug)]
 pub struct Logger;
 
-impl Basic for Logger {}
+impl Basic for Logger {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl LogDomain for Logger {
     fn init(&self) -> AlienResult<()> {

@@ -27,7 +27,11 @@ impl Debug for VirtIoNetDomain {
     }
 }
 
-impl Basic for VirtIoNetDomain {}
+impl Basic for VirtIoNetDomain {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl DeviceBase for VirtIoNetDomain {
     fn handle_irq(&self) -> AlienResult<()> {

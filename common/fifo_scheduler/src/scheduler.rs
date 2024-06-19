@@ -1,6 +1,7 @@
-use alloc::collections::VecDeque;
+use alloc::{collections::VecDeque, vec::Vec};
+use core::ops::Deref;
 
-use basic::arch::hart_id;
+use basic::{arch::hart_id, AlienResult};
 use common_scheduler::Scheduler;
 use rref::RRef;
 use task_meta::TaskSchedulingInfo;
@@ -38,5 +39,24 @@ impl Scheduler for FiFoScheduler {
 
     fn name(&self) -> &'static str {
         "FiFoScheduler"
+    }
+
+    fn dump_meta_data(&mut self) -> AlienResult<Vec<RRef<TaskSchedulingInfo>>> {
+        let mut res = Vec::new();
+        while let Some(task) = self.tasks.pop_front() {
+            res.push(task);
+        }
+        Ok(res)
+    }
+
+    fn rebuild_from_meta_data(
+        &mut self,
+        meta_data: &mut Vec<RRef<TaskSchedulingInfo>>,
+    ) -> AlienResult<()> {
+        meta_data.iter().for_each(|task_meta_data| {
+            let new_task = task_meta_data.deref().clone();
+            self.tasks.push_back(RRef::new(new_task));
+        });
+        Ok(())
     }
 }

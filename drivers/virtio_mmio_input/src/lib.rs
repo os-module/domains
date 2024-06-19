@@ -16,7 +16,11 @@ static INPUT: Once<Mutex<VirtIOInput<HalImpl, MmioTransport>>> = Once::new();
 #[derive(Debug)]
 pub struct InputDevDomain;
 
-impl Basic for InputDevDomain {}
+impl Basic for InputDevDomain {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 impl DeviceBase for InputDevDomain {
     fn handle_irq(&self) -> AlienResult<()> {
         INPUT.get().unwrap().lock().ack_interrupt().unwrap();

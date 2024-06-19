@@ -58,7 +58,11 @@ impl DeviceBase for BufInput {
     }
 }
 
-impl Basic for BufInput {}
+impl Basic for BufInput {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl BufInputDomain for BufInput {
     fn init(&self, input_domain_name: &str) -> AlienResult<()> {

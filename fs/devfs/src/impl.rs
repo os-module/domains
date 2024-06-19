@@ -181,7 +181,11 @@ impl FsDomain for DevFsDomainImpl {
     }
 }
 
-impl Basic for DevFsDomainImpl {}
+impl Basic for DevFsDomainImpl {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl DevFsDomain for DevFsDomainImpl {
     fn register(&self, rdev: u64, device_domain_name: &RRefVec<u8>) -> AlienResult<()> {

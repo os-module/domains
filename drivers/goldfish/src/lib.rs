@@ -30,7 +30,11 @@ impl RtcIORegion for SafeIORegionWrapper {
     }
 }
 
-impl Basic for Rtc {}
+impl Basic for Rtc {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl DeviceBase for Rtc {
     fn handle_irq(&self) -> AlienResult<()> {

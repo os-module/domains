@@ -98,7 +98,11 @@ impl GenericBlockDevice {
     }
 }
 
-impl Basic for GenericBlockDevice {}
+impl Basic for GenericBlockDevice {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl DeviceBase for GenericBlockDevice {
     fn handle_irq(&self) -> AlienResult<()> {

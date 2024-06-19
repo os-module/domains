@@ -11,7 +11,11 @@ use rref::RRefVec;
 #[derive(Debug)]
 pub struct XLogger;
 
-impl Basic for XLogger {}
+impl Basic for XLogger {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl LogDomain for XLogger {
     fn init(&self) -> AlienResult<()> {

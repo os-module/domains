@@ -33,7 +33,11 @@ impl Uart {
     }
 }
 
-impl Basic for Uart {}
+impl Basic for Uart {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl DeviceBase for Uart {
     fn handle_irq(&self) -> AlienResult<()> {

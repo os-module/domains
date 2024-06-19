@@ -74,7 +74,11 @@ fn get_file(inode: InodeID) -> Option<Arc<dyn File>> {
 #[derive(Debug)]
 struct VfsDomainImpl;
 
-impl Basic for VfsDomainImpl {}
+impl Basic for VfsDomainImpl {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl VfsDomain for VfsDomainImpl {
     fn init(&self, initrd: &[u8]) -> AlienResult<()> {

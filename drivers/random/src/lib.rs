@@ -12,7 +12,11 @@ use rref::RRefVec;
 #[derive(Debug)]
 pub struct RandomDeviceDomainImpl;
 
-impl Basic for RandomDeviceDomainImpl {}
+impl Basic for RandomDeviceDomainImpl {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl EmptyDeviceDomain for RandomDeviceDomainImpl {
     fn init(&self) -> AlienResult<()> {

@@ -69,7 +69,11 @@ impl NetStack {
     }
 }
 
-impl Basic for NetStack {}
+impl Basic for NetStack {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl DeviceBase for NetStack {
     fn handle_irq(&self) -> AlienResult<()> {

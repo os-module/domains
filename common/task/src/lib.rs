@@ -32,7 +32,11 @@ impl TaskDomainImpl {
     }
 }
 
-impl Basic for TaskDomainImpl {}
+impl Basic for TaskDomainImpl {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl TaskDomain for TaskDomainImpl {
     fn init(&self) -> AlienResult<()> {

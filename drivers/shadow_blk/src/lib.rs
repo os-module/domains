@@ -29,7 +29,11 @@ impl ShadowBlockDomainImpl {
     }
 }
 
-impl Basic for ShadowBlockDomainImpl {}
+impl Basic for ShadowBlockDomainImpl {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl DeviceBase for ShadowBlockDomainImpl {
     fn handle_irq(&self) -> AlienResult<()> {

@@ -27,7 +27,11 @@ impl GPUDomain {
     }
 }
 
-impl Basic for GPUDomain {}
+impl Basic for GPUDomain {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl DeviceBase for GPUDomain {
     fn handle_irq(&self) -> AlienResult<()> {

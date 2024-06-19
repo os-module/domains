@@ -34,7 +34,11 @@ impl DeviceBase for UartDomainImpl {
     }
 }
 
-impl Basic for UartDomainImpl {}
+impl Basic for UartDomainImpl {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl UartDomain for UartDomainImpl {
     fn init(&self, address_range: &Range<usize>) -> AlienResult<()> {

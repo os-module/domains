@@ -74,7 +74,11 @@ impl GenericFsDomain {
     }
 }
 
-impl Basic for GenericFsDomain {}
+impl Basic for GenericFsDomain {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl FsDomain for GenericFsDomain {
     fn init(&self) -> AlienResult<()> {

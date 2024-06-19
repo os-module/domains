@@ -19,7 +19,11 @@ static BLK: Once<Mutex<VirtIOBlk<HalImpl, MmioTransport>>> = Once::new();
 
 #[derive(Debug)]
 pub struct BlkDomain;
-impl Basic for BlkDomain {}
+impl Basic for BlkDomain {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl DeviceBase for BlkDomain {
     fn handle_irq(&self) -> AlienResult<()> {

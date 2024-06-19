@@ -1,15 +1,14 @@
 #![no_std]
 #![forbid(unsafe_code)]
 
-mod dump;
 mod scheduler;
 
 extern crate alloc;
 
-use alloc::boxed::Box;
+use alloc::{boxed::Box, vec::Vec};
 
 use basic::{println, AlienResult};
-use interface::{Basic, SchedulerDataContainer, SchedulerDomain};
+use interface::{Basic, SchedulerDomain};
 use rref::RRef;
 pub use scheduler::Scheduler;
 use task_meta::TaskSchedulingInfo;
@@ -27,7 +26,11 @@ impl CommonSchedulerDomain {
     }
 }
 
-impl Basic for CommonSchedulerDomain {}
+impl Basic for CommonSchedulerDomain {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl SchedulerDomain for CommonSchedulerDomain {
     fn init(&self) -> AlienResult<()> {
@@ -44,8 +47,13 @@ impl SchedulerDomain for CommonSchedulerDomain {
         Ok(scheduler::fetch_task(info))
     }
 
-    fn dump_meta_data(&self, data: &mut SchedulerDataContainer) -> AlienResult<()> {
-        dump::dump_meta_data(data);
-        Ok(())
+    fn dump_meta_data(&self) -> AlienResult<Vec<RRef<TaskSchedulingInfo>>> {
+        scheduler::dump_meta_data()
+    }
+    fn rebuild_from_meta_data(
+        &self,
+        meta_data: &mut Vec<RRef<TaskSchedulingInfo>>,
+    ) -> AlienResult<()> {
+        scheduler::rebuild_from_meta_data(meta_data)
     }
 }

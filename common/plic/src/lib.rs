@@ -66,7 +66,11 @@ impl PLICDomainImpl {
     }
 }
 
-impl Basic for PLICDomainImpl {}
+impl Basic for PLICDomainImpl {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl PLICDomain for PLICDomainImpl {
     fn init(&self, address_range: &Range<usize>) -> AlienResult<()> {

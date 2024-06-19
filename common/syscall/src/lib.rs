@@ -51,7 +51,11 @@ impl SysCallDomainImpl {
     }
 }
 
-impl Basic for SysCallDomainImpl {}
+impl Basic for SysCallDomainImpl {
+    fn domain_id(&self) -> u64 {
+        rref::domain_id()
+    }
+}
 
 impl SysCallDomain for SysCallDomainImpl {
     fn init(&self) -> AlienResult<()> {
