@@ -5,7 +5,7 @@ mod scheduler;
 
 extern crate alloc;
 
-use alloc::{boxed::Box, vec::Vec};
+use alloc::boxed::Box;
 
 use basic::{println, AlienResult};
 use interface::{Basic, SchedulerDomain};
@@ -45,15 +45,5 @@ impl SchedulerDomain for CommonSchedulerDomain {
 
     fn fetch_task(&self, info: RRef<TaskSchedulingInfo>) -> AlienResult<RRef<TaskSchedulingInfo>> {
         Ok(scheduler::fetch_task(info))
-    }
-
-    fn dump_meta_data(&self) -> AlienResult<Vec<RRef<TaskSchedulingInfo>>> {
-        scheduler::dump_meta_data()
-    }
-    fn rebuild_from_meta_data(
-        &self,
-        meta_data: &mut Vec<RRef<TaskSchedulingInfo>>,
-    ) -> AlienResult<()> {
-        scheduler::rebuild_from_meta_data(meta_data)
     }
 }

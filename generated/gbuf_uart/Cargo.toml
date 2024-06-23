@@ -12,3 +12,4 @@ rref = { path = "../../../domain-lib/rref"  }
 interface = { path = "../../../domain-lib/interface",  features = ["domain"]  }
 malloc = { path = "../../../domain-lib/malloc" }
 buf_uart = { path = "../../drivers/buf_uart" }
+storage = { path = "../../../domain-lib/storage", features = ["impl"] }

@@ -8,7 +8,7 @@ use alloc::{
     sync::Arc,
 };
 
-use basic::{AlienError, AlienResult};
+use basic::{println, AlienError, AlienResult};
 use interface::{Basic, BlkDeviceDomain, DeviceBase, DomainType, ShadowBlockDomain};
 use log::error;
 use rref::RRef;
@@ -69,7 +69,10 @@ impl ShadowBlockDomain for ShadowBlockDomainImpl {
                     error!("reload domain failed");
                     return Err(AlienError::DOMAINCRASH);
                 } else {
-                    error!("restart domain ok");
+                    println!(
+                        "restart domain {} ok, try read block again",
+                        blk_domain_name
+                    );
                     data = RRef::new([0u8; 512]);
                     blk.read_block(block, data)
                 }

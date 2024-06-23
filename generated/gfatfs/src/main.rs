@@ -11,18 +11,24 @@ use basic::println;
 use corelib::CoreFunction;
 use interface::FsDomain;
 use rref::{domain_id, SharedHeapAlloc};
-
+use storage::StorageArg;
 #[no_mangle]
 fn main(
     sys: Box<dyn CoreFunction>,
     domain_id: u64,
     shared_heap: Box<dyn SharedHeapAlloc>,
+    storage_arg: StorageArg,
 ) -> Box<dyn FsDomain> {
     // init basic
     corelib::init(sys);
     // init rref's shared heap
     rref::init(shared_heap, domain_id);
     basic::logging::init_logger();
+    // init storage
+    let StorageArg { allocator, storage } = storage_arg;
+    storage::init_database(storage);
+    storage::init_data_allocator(allocator);
+
     // activate the domain
     interface::activate_domain();
     // call the real blk driver

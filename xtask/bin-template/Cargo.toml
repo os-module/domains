@@ -11,5 +11,5 @@ corelib = { git = "https://github.com/os-module/domain-lib"  }
 basic = { path = "../../../domain-lib/basic"  }
 rref = { path = "../../../domain-lib/rref"  }
 interface = { path = "../../../domain-lib/interface", features = ["domain"] }
-
+storage = { path = "../../../domain-lib/storage" }
 DOMAIN_NAME = { path = "../../TY/DOMAIN_NAME" }

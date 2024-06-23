@@ -10,4 +10,5 @@ basic = { path = "../../../domain-lib/basic", features = ["task"]  }
 interface = { path = "../../../domain-lib/interface"  }
 rref = { path = "../../../domain-lib/rref"  }
 task_meta = { path = "../../../domain-lib/task_meta"  }
+spin = "0"
 log = "0"

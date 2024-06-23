@@ -13,3 +13,4 @@ rref = { path = "../../../domain-lib/rref"  }
 interface = { path = "../../../domain-lib/interface",  features = ["domain"]  }
 
 buf_input = { path = "../../drivers/buf_input" }
+storage = { path = "../../../domain-lib/storage", features = ["impl"] }
