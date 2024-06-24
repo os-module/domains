@@ -238,6 +238,12 @@ impl TaskDomain for TaskDomainImpl {
     fn do_mmap_device(&self, phy_addr_range: Range<usize>) -> AlienResult<isize> {
         syscall::mmap::do_mmap_device(phy_addr_range)
     }
+    fn do_set_priority(&self, which: i32, who: u32, priority: i32) -> AlienResult<()> {
+        syscall::priority::do_set_priority(which, who, priority)
+    }
+    fn do_get_priority(&self, which: i32, who: u32) -> AlienResult<i32> {
+        syscall::priority::do_get_priority(which, who)
+    }
 }
 
 pub fn main() -> Box<dyn TaskDomain> {

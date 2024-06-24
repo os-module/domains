@@ -24,6 +24,7 @@ impl RandomScheduler {
         println!("RandomScheduler: new");
         let task_list = storage::get_data::<__TaskList>("tasks").unwrap();
         let len = task_list.lock().len();
+        task_list.lock().reserve(20);
         println!("RandomScheduler: The task list len is {}", len);
         Self { tasks: task_list }
     }
@@ -37,10 +38,15 @@ impl Scheduler for RandomScheduler {
     fn fetch_task(&self) -> Option<RRef<TaskSchedulingInfo>> {
         let hart_id = hart_id();
         let mut tasks = self.tasks.lock();
-        let res = tasks
-            .iter()
-            .position(|info| info.cpus_allowed & (1 << hart_id) != 0);
-        // println!("fetch_task: {:?}, len: {}", res, self.tasks.len());
+        let mut max_nice = i8::MAX;
+        let mut res = None;
+        // find the task with the highest priority, it's nice is the smallest
+        for (idx, info) in tasks.iter().enumerate() {
+            if info.cpus_allowed & (1 << hart_id) != 0 && info.nice < max_nice {
+                max_nice = info.nice;
+                res = Some(idx);
+            }
+        }
         static FETCH_MASK: AtomicBool = AtomicBool::new(false);
         if !FETCH_MASK.swap(true, core::sync::atomic::Ordering::Relaxed) {
             println!("fetch_task: {:?}, len: {}", res, tasks.len());

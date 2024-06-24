@@ -309,7 +309,7 @@ impl Task {
         let context = TaskContext::new_user(VirtAddr::from(0));
 
         let task_basic_info = TaskBasicInfo::new(task.tid.raw(), context);
-        let scheduling_info = TaskSchedulingInfo::new(task.tid.raw(), 1, 1 << hart_id());
+        let scheduling_info = TaskSchedulingInfo::new(task.tid.raw(), 0, 1 << hart_id());
         let task_meta = TaskMeta::new(task_basic_info, scheduling_info);
         let k_stack_top = basic::add_one_task(task_meta).unwrap();
         task.kernel_stack = k_stack_top;
@@ -419,7 +419,7 @@ impl Task {
 
         let context = TaskContext::new_user(VirtAddr::from(0));
         let task_basic_info = TaskBasicInfo::new(task.tid.raw(), context);
-        let scheduling_info = TaskSchedulingInfo::new(task.tid.raw(), 1, usize::MAX);
+        let scheduling_info = TaskSchedulingInfo::new(task.tid.raw(), 0, usize::MAX);
         let task_meta = TaskMeta::new(task_basic_info, scheduling_info);
 
         let k_stack_top = basic::add_one_task(task_meta).unwrap();

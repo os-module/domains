@@ -97,3 +97,23 @@ pub fn sys_exit_group(task_domain: &Arc<dyn TaskDomain>, status: usize) -> Alien
     info!("<sys_exit_group> status: {}", status);
     task_domain.do_exit(status as isize)
 }
+
+pub fn sys_set_priority(
+    task_domain: &Arc<dyn TaskDomain>,
+    which: usize,
+    who: usize,
+    prio: usize,
+) -> AlienResult<isize> {
+    task_domain.do_set_priority(which as i32, who as u32, prio as i32)?;
+    Ok(0)
+}
+
+pub fn sys_get_priority(
+    task_domain: &Arc<dyn TaskDomain>,
+    which: usize,
+    who: usize,
+) -> AlienResult<isize> {
+    task_domain
+        .do_get_priority(which as i32, who as u32)
+        .map(|prio| prio as isize)
+}

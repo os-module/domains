@@ -225,6 +225,8 @@ impl SysCallDomain for SysCallDomainImpl {
             SYSCALL_SIGPROCMASK => {
                 sys_sigprocmask(&self.task_domain, args[0], args[1], args[2], args[3])
             }
+            140 => sys_set_priority(&self.task_domain, args[0], args[1], args[2]),
+            141 => sys_get_priority(&self.task_domain, args[0], args[1]),
             SYSCALL_SETPGID => sys_set_pgid(&self.task_domain),
             SYSCALL_GETPGID => sys_get_pgid(&self.task_domain),
             SYSCALL_SETSID => sys_set_sid(&self.task_domain),

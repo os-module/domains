@@ -27,7 +27,7 @@ pub fn ktread_create(func: fn(), name: &str) -> AlienResult<()> {
 
     let context = TaskContext::new_kernel(func as _, VirtAddr::from(0));
     let task_basic_info = TaskBasicInfo::new(tid.raw(), context);
-    let scheduling_info = TaskSchedulingInfo::new(tid.raw(), 1, usize::MAX);
+    let scheduling_info = TaskSchedulingInfo::new(tid.raw(), 0, usize::MAX);
     let task_meta = TaskMeta::new(task_basic_info, scheduling_info);
 
     let k_stack_top = basic::add_one_task(task_meta)?;
