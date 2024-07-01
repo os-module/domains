@@ -38,8 +38,62 @@ impl FsDomain for DevFsDomainImpl {
         self.generic_fs.mount(mp, dev_inode)
     }
 
+    fn root_inode_id(&self) -> AlienResult<InodeID> {
+        self.generic_fs.root_inode_id()
+    }
     fn drop_inode(&self, inode: InodeID) -> AlienResult<()> {
         self.generic_fs.drop_inode(inode)
+    }
+
+    fn dentry_name(&self, inode: InodeID, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+        self.generic_fs.dentry_name(inode, buf)
+    }
+
+    fn dentry_path(&self, inode: InodeID, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+        self.generic_fs.dentry_path(inode, buf)
+    }
+    fn dentry_set_parent(
+        &self,
+        inode: InodeID,
+        domain_ident: &RRefVec<u8>,
+        parent: InodeID,
+    ) -> AlienResult<()> {
+        self.generic_fs
+            .dentry_set_parent(inode, domain_ident, parent)
+    }
+
+    fn dentry_parent(&self, inode: InodeID) -> AlienResult<Option<InodeID>> {
+        self.generic_fs.dentry_parent(inode)
+    }
+
+    fn dentry_to_mount_point(
+        &self,
+        inode: InodeID,
+        domain_ident: &RRefVec<u8>,
+        mount_inode_id: InodeID,
+    ) -> AlienResult<()> {
+        self.generic_fs
+            .dentry_to_mount_point(inode, domain_ident, mount_inode_id)
+    }
+
+    fn dentry_mount_point(
+        &self,
+        inode: InodeID,
+        domain_ident: RRefVec<u8>,
+    ) -> AlienResult<Option<(RRefVec<u8>, InodeID)>> {
+        self.generic_fs.dentry_mount_point(inode, domain_ident)
+    }
+
+    fn dentry_clear_mount_point(&self, inode: InodeID) -> AlienResult<()> {
+        self.generic_fs.dentry_clear_mount_point(inode)
+    }
+
+    fn dentry_find(&self, inode: InodeID, name: &RRefVec<u8>) -> AlienResult<Option<InodeID>> {
+        self.generic_fs.dentry_find(inode, name)
+    }
+
+    fn dentry_remove(&self, inode: InodeID, name: &RRefVec<u8>) -> AlienResult<()> {
+        self.generic_fs.dentry_remove(inode, name)
     }
 
     fn read_at(

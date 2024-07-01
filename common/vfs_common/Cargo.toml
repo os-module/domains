@@ -1,0 +1,16 @@
+[package]
+name = "vfs_common"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+basic = { path = "../../../domain-lib/basic" }
+vfscore = { git = "https://github.com/os-module/rvfs.git", features = ["linux_error"] }
+unifs = { git = "https://github.com/os-module/rvfs.git" }
+rref = { path = "../../../domain-lib/rref"  }
+
+interface = { path = "../../../domain-lib/interface" }
+log = "0"
+storage = { path = "../../../domain-lib/storage", features = ["impl"] }
+
+spin = "0"

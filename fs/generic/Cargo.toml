@@ -9,7 +9,7 @@ edition = "2021"
 interface = { path = "../../../domain-lib/interface"  }
 rref = { path = "../../../domain-lib/rref"  }
 basic = { path = "../../../domain-lib/basic"  }
-
 vfscore = { git = "https://github.com/os-module/rvfs.git", features = ["linux_error"] }
 log = "0"
 spin = "0"
+vfs_common = { path = "../../common/vfs_common" }

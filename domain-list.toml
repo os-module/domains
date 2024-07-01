@@ -28,6 +28,7 @@ members = [
     "logger",
     "xlogger",
     "net_stack",
+    "vfs2"
 ]
 
 init_members = [
@@ -62,4 +63,5 @@ disk_members = [
     "virtio_mmio_net",
     "random_scheduler",
     "xlogger",
+    "vfs2",
 ]

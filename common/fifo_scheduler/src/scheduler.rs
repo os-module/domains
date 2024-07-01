@@ -3,7 +3,7 @@ use alloc::{collections::VecDeque, sync::Arc};
 use basic::{arch::hart_id, sync::Mutex};
 use common_scheduler::Scheduler;
 use rref::RRef;
-use storage::DataStorageHeap;
+use storage::{DataStorageHeap, StorageBuilder};
 use task_meta::TaskSchedulingInfo;
 
 type __TaskList = Mutex<VecDeque<RRef<TaskSchedulingInfo>, DataStorageHeap>>;
@@ -16,7 +16,7 @@ pub struct CustomFiFoScheduler {
 impl CustomFiFoScheduler {
     pub fn new() -> Self {
         let task_list = storage::get_or_insert_with_data::<__TaskList, _>("tasks", || {
-            __TaskList::new(VecDeque::new_in(DataStorageHeap))
+            __TaskList::new(VecDeque::new_in(DataStorageHeap::build()))
         });
         Self { tasks: task_list }
     }

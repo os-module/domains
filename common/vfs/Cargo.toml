@@ -19,3 +19,5 @@ libflate = { version = "2.0.0", default-features = false }
 core2 = { version = "0.4", default-features = false } # unsafe lib, but in whitelist
 log = "0"
 spin = "0"
+vfs_common = { path = "../vfs_common" }
+storage = { path = "../../../domain-lib/storage", features = ["impl"] }

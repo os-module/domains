@@ -14,9 +14,9 @@ use rref::{domain_id, SharedHeapAlloc};
 use storage::StorageArg;
 #[no_mangle]
 fn main(
-    sys: Box<dyn CoreFunction>,
+    sys: &'static dyn CoreFunction,
     domain_id: u64,
-    shared_heap: Box<dyn SharedHeapAlloc>,
+    shared_heap: &'static dyn SharedHeapAlloc,
     storage_arg: StorageArg,
 ) -> Box<dyn LogDomain> {
     // init basic

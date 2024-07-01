@@ -566,7 +566,7 @@ pub fn sys_chdir(
     let len;
     (tmp_buf, len) = task_domain.read_string_from_user(path, tmp_buf)?;
     let path = core::str::from_utf8(&tmp_buf.as_slice()[..len]).unwrap();
-    info!("<sys_chdir> path: {:?}", path);
+    // println!("<sys_chdir> path: {:?}", path);
     let (_, current_root) = user_path_at(task_domain, AT_FDCWD, path)?;
     let id = vfs.vfs_open(current_root, &tmp_buf, len, 0, 0)?;
     task_domain.set_cwd(id)?;
@@ -586,7 +586,9 @@ pub fn sys_getcwd(
     let mut tmp_buf = RRefVec::<u8>::new(0, size);
     let r;
     (tmp_buf, r) = vfs.vfs_get_path(cwd, tmp_buf)?;
+    // let cwd = core::str::from_utf8(&tmp_buf.as_slice()[..r]).unwrap();
     info!("<sys_getcwd> buf: {:#x} size: {:?} r: {:?}", buf, size, r);
+    // println!("<sys_getcwd> cwd: {:?}", cwd);
     task_domain.copy_to_user(buf, &tmp_buf.as_slice()[..r])?;
     Ok(r as isize)
 }
