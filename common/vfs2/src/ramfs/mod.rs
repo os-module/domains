@@ -1,6 +1,6 @@
 use alloc::sync::Arc;
 
-use vfscore::{dentry::VfsDentry, utils::VfsNodeType};
+use vfscore::{dentry::VfsDentry, utils::VfsNodeType, VfsResult};
 
 ///
 /// ```bash
@@ -21,60 +21,33 @@ use vfscore::{dentry::VfsDentry, utils::VfsNodeType};
 /// |-- bin  (fat32)
 /// |-- tmp   (ramfs)
 /// ```
-pub fn init_ramfs(root_dt: &Arc<dyn VfsDentry>) {
-    let root_inode = root_dt.inode().unwrap();
-    let root = root_inode
-        .create("root", VfsNodeType::Dir, "rwxr-xr-x".into(), None)
-        .unwrap();
-    let var = root_inode
-        .create("var", VfsNodeType::Dir, "rwxr-xr-x".into(), None)
-        .unwrap();
-    var.create("log", VfsNodeType::Dir, "rwxrwxr-x".into(), None)
-        .unwrap();
-    var.create("tmp", VfsNodeType::Dir, "rwxrwxrwx".into(), None)
-        .unwrap();
-    var.create("run", VfsNodeType::Dir, "rwxrwxrwx".into(), None)
-        .unwrap();
-    let etc = root_inode
-        .create("etc", VfsNodeType::Dir, "rwxr-xr-x".into(), None)
-        .unwrap();
-    let passwd = etc
-        .create("passwd", VfsNodeType::File, "rw-r--r--".into(), None)
-        .unwrap();
-    let localtime = etc
-        .create("localtime", VfsNodeType::File, "rw-r--r--".into(), None)
-        .unwrap();
-    let adjtime = etc
-        .create("adjtime", VfsNodeType::File, "rw-r--r--".into(), None)
-        .unwrap();
+pub fn init_ramfs(root_dt: &Arc<dyn VfsDentry>) -> VfsResult<()> {
+    let root_inode = root_dt.inode()?;
+    let root = root_inode.create("root", VfsNodeType::Dir, "rwxr-xr-x".into(), None)?;
+    let var = root_inode.create("var", VfsNodeType::Dir, "rwxr-xr-x".into(), None)?;
+    var.create("log", VfsNodeType::Dir, "rwxrwxr-x".into(), None)?;
+    var.create("tmp", VfsNodeType::Dir, "rwxrwxrwx".into(), None)?;
+    var.create("run", VfsNodeType::Dir, "rwxrwxrwx".into(), None)?;
+    let etc = root_inode.create("etc", VfsNodeType::Dir, "rwxr-xr-x".into(), None)?;
+    let passwd = etc.create("passwd", VfsNodeType::File, "rw-r--r--".into(), None)?;
+    let localtime = etc.create("localtime", VfsNodeType::File, "rw-r--r--".into(), None)?;
+    let adjtime = etc.create("adjtime", VfsNodeType::File, "rw-r--r--".into(), None)?;
 
-    passwd
-        .write_at(0, b"root:x:0:0:root:/root:/bin/bash\n")
-        .unwrap();
-    localtime.write_at(0, UTC).unwrap();
-    adjtime.write_at(0, RTC_TIME.as_bytes()).unwrap();
+    passwd.write_at(0, b"root:x:0:0:root:/root:/bin/bash\n")?;
+    localtime.write_at(0, UTC)?;
+    adjtime.write_at(0, RTC_TIME.as_bytes())?;
 
-    root_inode
-        .create("dev", VfsNodeType::Dir, "rwxr-xr-x".into(), None)
-        .unwrap();
-    root_inode
-        .create("proc", VfsNodeType::Dir, "rwxr-xr-x".into(), None)
-        .unwrap();
-    root_inode
-        .create("sys", VfsNodeType::Dir, "rwxr-xr-x".into(), None)
-        .unwrap();
-    root_inode
-        .create("tmp", VfsNodeType::Dir, "rwxrwxrwx".into(), None)
-        .unwrap();
-    root_inode
-        .create("tests", VfsNodeType::Dir, "rwxr-xr-x".into(), None)
-        .unwrap();
+    root_inode.create("dev", VfsNodeType::Dir, "rwxr-xr-x".into(), None)?;
+    root_inode.create("proc", VfsNodeType::Dir, "rwxr-xr-x".into(), None)?;
+    root_inode.create("sys", VfsNodeType::Dir, "rwxr-xr-x".into(), None)?;
+    root_inode.create("tmp", VfsNodeType::Dir, "rwxrwxrwx".into(), None)?;
+    root_inode.create("tests", VfsNodeType::Dir, "rwxr-xr-x".into(), None)?;
+    root_inode.create("domain", VfsNodeType::Dir, "rwxr-xr-x".into(), None)?;
 
-    let _bashrc = root
-        .create(".bashrc", VfsNodeType::File, "rwxrwxrwx".into(), None)
-        .unwrap();
+    let _bashrc = root.create(".bashrc", VfsNodeType::File, "rwxrwxrwx".into(), None)?;
 
     basic::println!("ramfs init success");
+    Ok(())
 }
 
 /// localtime文件中保存的内容

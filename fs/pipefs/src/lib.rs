@@ -24,5 +24,5 @@ type SysFsDomain = GenericFsDomain;
 
 pub fn main() -> Box<dyn FsDomain> {
     let pipefs = Arc::new(PipeFs::new(CommonFsProviderImpl, "procfs"));
-    Box::new(SysFsDomain::new(pipefs, "pipefs".to_string(), None))
+    Box::new(SysFsDomain::new(pipefs, "pipefs".to_string(), None, None))
 }

@@ -35,6 +35,7 @@ pub fn main() -> Box<dyn FsDomain> {
         procfs,
         "procfs".to_string(),
         Some(mount_func),
+        None,
     ))
 }
 

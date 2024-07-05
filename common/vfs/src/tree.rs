@@ -52,7 +52,7 @@ fn common_load_or_create_fs(
 
 fn init_filesystem_before(initrd: &[u8]) -> VfsResult<Arc<dyn VfsDentry>> {
     let ramfs_root = common_load_or_create_fs(false, "ramfs-1", b"/", false);
-    init_ramfs(&ramfs_root);
+    init_ramfs(&ramfs_root)?;
     SYSTEM_ROOT_FS.call_once(|| ramfs_root.clone());
 
     let procfs_root = common_load_or_create_fs(false, "procfs", b"/proc", false);
@@ -78,13 +78,14 @@ fn init_filesystem_before(initrd: &[u8]) -> VfsResult<Arc<dyn VfsDentry>> {
     pipefs::init_pipefs(&pipefs_root);
 
     let shm_ramfs_root = common_load_or_create_fs(true, "ramfs", b"/dev/shm", false);
-
+    let domain_fs_root = common_load_or_create_fs(false, "domainfs", b"/domain", false);
     let path = VfsPath::new(ramfs_root.clone(), ramfs_root.clone());
     path.join("proc")?.mount(procfs_root, 0)?;
     path.join("sys")?.mount(sysfs_root, 0)?;
     path.join("dev")?.mount(devfs_root, 0)?;
     path.join("tmp")?.mount(tmpfs_root.clone(), 0)?;
     path.join("dev/shm")?.mount(shm_ramfs_root, 0)?;
+    path.join("domain")?.mount(domain_fs_root, 0)?;
 
     crate::initrd::populate_initrd(ramfs_root.clone(), initrd)?;
 

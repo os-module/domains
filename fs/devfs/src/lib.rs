@@ -98,6 +98,6 @@ static TASK_DOMAIN: Once<Arc<dyn TaskDomain>> = Once::new();
 
 pub fn main() -> Box<dyn DevFsDomain> {
     let devfs = Arc::new(DevFs::<_, Mutex<()>>::new(ProviderImpl));
-    let devfs = GenericFsDomain::new(devfs, "devfs".to_string(), None);
+    let devfs = GenericFsDomain::new(devfs, "devfs".to_string(), None, None);
     Box::new(DevFsDomainImpl::new(devfs))
 }

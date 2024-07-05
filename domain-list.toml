@@ -28,6 +28,7 @@ members = [
     "logger",
     "xlogger",
     "net_stack",
+    "domainfs",
     "vfs2"
 ]
 
@@ -54,6 +55,7 @@ init_members = [
     "fifo_scheduler",
     "logger",
     "net_stack",
+    "domainfs",
 ]
 
 disk_members = [

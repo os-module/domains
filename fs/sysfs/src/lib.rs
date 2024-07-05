@@ -23,5 +23,5 @@ type SysFsDomain = GenericFsDomain;
 
 pub fn main() -> Box<dyn FsDomain> {
     let sysfs = Arc::new(SysFs::new(CommonFsProviderImpl, "procfs"));
-    Box::new(SysFsDomain::new(sysfs, "sysfs".to_string(), None))
+    Box::new(SysFsDomain::new(sysfs, "sysfs".to_string(), None, None))
 }

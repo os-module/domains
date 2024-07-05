@@ -1,0 +1,15 @@
+[package]
+name = "domainfs"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+interface = { path = "../../../domain-lib/interface"  }
+rref = { path = "../../../domain-lib/rref"  }
+basic = { path = "../../../domain-lib/basic" }
+
+generic = { path = "../generic" }
+vfscore = { git = "https://github.com/os-module/rvfs.git", features = ["linux_error"] }
+custom_fs = { git = "https://github.com/os-module/rvfs.git" }
+spin = "0"

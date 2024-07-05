@@ -45,6 +45,7 @@ pub struct GenericFsDomain {
     inode_index: AtomicU64,
     name: String,
     mount_func: Option<fn(root: &Arc<dyn VfsDentry>)>,
+    init_func: Option<fn()>,
     parent_dentry_map: Mutex<BTreeMap<InodeID, Arc<dyn VfsDentry>>>,
 }
 
@@ -61,12 +62,14 @@ impl GenericFsDomain {
         fs: Arc<dyn VfsFsType>,
         name: String,
         mount_func: Option<fn(root: &Arc<dyn VfsDentry>)>,
+        init_func: Option<fn()>,
     ) -> Self {
         Self {
             fs,
             dentry_map: Mutex::new(BTreeMap::new()),
             inode_index: AtomicU64::new(0),
             mount_func,
+            init_func,
             name,
             parent_dentry_map: Mutex::new(BTreeMap::new()),
         }
@@ -91,6 +94,9 @@ impl FsDomain for GenericFsDomain {
             _ => panic!("vfs domain not found"),
         };
         VFS_DOMAIN.call_once(|| vfs_domain);
+        if let Some(init) = self.init_func {
+            init();
+        }
         println!("{} FsDomain init", self.name);
         Ok(())
     }
