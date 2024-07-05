@@ -58,7 +58,7 @@ impl Scheduler for RandomScheduler {
     }
 
     fn name(&self) -> &'static str {
-        "FiFoScheduler"
+        "RandomScheduler"
     }
 }
 
