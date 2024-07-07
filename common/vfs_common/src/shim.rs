@@ -3,6 +3,7 @@ use alloc::{
     sync::{Arc, Weak},
     vec::Vec,
 };
+use alloc::collections::BTreeMap;
 use core::ffi::CStr;
 
 use basic::sync::Mutex;
@@ -31,7 +32,12 @@ pub struct RootShimDentry {
     inode_id: InodeID,
     inode: Arc<dyn VfsInode>,
     fs_domain_ident: Arc<Vec<u8>>,
-    mount_point: Once<Weak<dyn VfsDentry>>,
+    mount_point_this: Once<Weak<dyn VfsDentry>>,
+    mount_point: Mutex<Option<VfsMountPoint>>,
+    parent: Mutex<Option<Arc<dyn VfsDentry>>>,
+    path: Mutex<String>,
+    children: Mutex<BTreeMap<String, Arc<dyn VfsDentry>>>,
+    name: Mutex<String>,
 }
 
 impl RootShimDentry {
@@ -53,10 +59,15 @@ impl RootShimDentry {
             inode_id,
             inode,
             fs_domain_ident,
-            mount_point: Once::new(),
+            mount_point_this: Once::new(),
+            mount_point: Mutex::new(None),
+            parent: Mutex::new(None),
+            path: Mutex::new(String::from("")),
+            children: Mutex::new(HashMap::new()),
+            name: Mutex::new(String::from("")),
         });
         let weak = Arc::downgrade(&(this.clone() as Arc<dyn VfsDentry>));
-        this.mount_point.call_once(|| weak);
+        this.mount_point_this.call_once(|| weak);
         this
     }
 
@@ -73,10 +84,15 @@ impl RootShimDentry {
             inode_id,
             inode: inode as Arc<dyn VfsInode>,
             fs_domain_ident,
-            mount_point: Once::new(),
+            mount_point_this: Once::new(),
+            mount_point: Mutex::new(None),
+            parent: Mutex::new(None),
+            path: Mutex::new(String::from("")),
+            children: Mutex::new(HashMap::new()),
+            name: Mutex::new(String::from("")),
         });
         let weak = Arc::downgrade(&(shim_dentry.clone() as Arc<dyn VfsDentry>));
-        shim_dentry.mount_point.call_once(|| weak);
+        shim_dentry.mount_point_this.call_once(|| weak);
         shim_dentry
     }
     pub fn inode_id(&self) -> InodeID {
@@ -100,11 +116,15 @@ impl Drop for FsShimInode {
 
 impl VfsDentry for RootShimDentry {
     fn name(&self) -> String {
+        if !self.name.lock().is_empty() {
+            return self.name.lock().clone();
+        }
         let buf = RRefVec::new(0, 32);
         let (buf, l) = self.fs_domain.dentry_name(self.inode_id, buf).unwrap();
         let name = core::str::from_utf8(&buf.as_slice()[..l])
             .unwrap()
             .to_string();
+        *self.name.lock() = name.clone();
         name
     }
 
@@ -122,7 +142,7 @@ impl VfsDentry for RootShimDentry {
         self.fs_domain
             .dentry_to_mount_point(self.inode_id, &domain_ident, mount_inode_id)
             .unwrap();
-        self.mount_point
+        self.mount_point_this
             .call_once(|| Arc::downgrade(&(self.clone() as Arc<dyn VfsDentry>)));
         // let name = core::str::from_utf8(&domain_ident.as_slice())
         //     .unwrap();
@@ -136,6 +156,9 @@ impl VfsDentry for RootShimDentry {
     }
 
     fn mount_point(&self) -> Option<VfsMountPoint> {
+        if let Some(mount_point) = self.mount_point.lock().as_ref() {
+            return Some(mount_point.clone());
+        }
         let domain_ident = RRefVec::new(0, 32);
         let (mount_point, inode_id) = self
             .fs_domain
@@ -151,17 +174,17 @@ impl VfsDentry for RootShimDentry {
             DomainType::DevFsDomain(fs_domain) => fs_domain,
             _ => panic!("mount_point domain is not FsDomain"),
         };
-        let root_inode = FsShimInode::new(
+        let root_dentry = Self::new(
             fs_domain,
             inode_id,
             Arc::new(Vec::from(root_fs_domain_ident)),
         );
-        let root_dentry = Self::from(Arc::new(root_inode));
         let mount_point = VfsMountPoint {
             root: root_dentry,
-            mount_point: self.mount_point.get().unwrap().clone(),
+            mount_point: self.mount_point_this.get().unwrap().clone(),
             mnt_flags: 0,
         };
+        self.mount_point.lock().replace(mount_point.clone());
         Some(mount_point)
     }
 
@@ -169,29 +192,33 @@ impl VfsDentry for RootShimDentry {
         self.fs_domain
             .dentry_clear_mount_point(self.inode_id)
             .unwrap();
+        self.mount_point.lock().take();
     }
 
     fn find(&self, path: &str) -> Option<Arc<dyn VfsDentry>> {
+        if let Some(dentry) = self.children.lock().get(path) {
+            return Some(dentry.clone());
+        }
         let shared_path = RRefVec::from_slice(path.as_bytes());
         let inode_id = self
             .fs_domain
             .dentry_find(self.inode_id, &shared_path)
             .unwrap()?;
-        let inode = FsShimInode::new(
+        let this = Self::new(
             self.fs_domain.clone(),
             inode_id,
             self.fs_domain_ident.clone(),
         );
-        let this = Self::from(Arc::new(inode));
         Some(this)
     }
 
     fn insert(
         self: Arc<Self>,
-        _name: &str,
+        name: &str,
         child: Arc<dyn VfsInode>,
     ) -> VfsResult<Arc<dyn VfsDentry>> {
         let this = Self::from(child);
+        self.children.lock().insert(name.to_string(), this.clone());
         Ok(this)
     }
 
@@ -201,6 +228,7 @@ impl VfsDentry for RootShimDentry {
             .fs_domain
             .dentry_remove(self.inode_id, &shared_name)
             .unwrap();
+        self.children.lock().remove(name);
         // let inode = FsShimInode::new(self.fs_domain.clone(), inode_id, Arc::new(Vec::from(name)));
         // let shim_dentry = Self::from(Arc::new(inode));
         // Some(Arc::new(shim_dentry))
@@ -208,13 +236,15 @@ impl VfsDentry for RootShimDentry {
     }
 
     fn parent(&self) -> Option<Arc<dyn VfsDentry>> {
+        if let Some(parent) = self.parent.lock().as_ref() {
+            return Some(parent.clone());
+        }
         let parent_inode_id = self.fs_domain.dentry_parent(self.inode_id).unwrap()?;
-        let inode = FsShimInode::new(
+        let dentry = Self::new(
             self.fs_domain.clone(),
             parent_inode_id,
             self.fs_domain_ident.clone(),
         );
-        let dentry = Self::from(Arc::new(inode));
         Some(dentry)
     }
 
@@ -229,15 +259,20 @@ impl VfsDentry for RootShimDentry {
         self.fs_domain
             .dentry_set_parent(self.inode_id, &domain_ident, parent_inode_id)
             .unwrap();
+        self.parent.lock().replace(parent.clone());
         insert_dentry_to_state(parent);
     }
 
     fn path(&self) -> String {
+        if !self.path.lock().is_empty() {
+            return self.path.lock().clone();
+        }
         let buf = RRefVec::new(0, 64);
         let (buf, l) = self.fs_domain.dentry_path(self.inode_id, buf).unwrap();
         let path = core::str::from_utf8(&buf.as_slice()[..l])
             .unwrap()
             .to_string();
+        *self.path.lock() = path.clone();
         path
     }
 }
@@ -520,7 +555,7 @@ impl VfsFsType for ShimFs {
     }
 
     fn fs_name(&self) -> String {
-        let buf = RRefVec::new(0, 16);
+        let buf = RRefVec::new(0, 32);
         let (buf, len) = self.fs_domain.fs_name(buf).unwrap();
         core::str::from_utf8(&buf.as_slice()[..len])
             .unwrap()
