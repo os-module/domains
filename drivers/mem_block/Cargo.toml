@@ -1,0 +1,12 @@
+[package]
+name = "mem_block"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+interface = { path = "../../../domain-lib/interface"  }
+rref = { path = "../../../domain-lib/rref"  }
+basic = { path = "../../../domain-lib/basic" }
+spin = "0"
+log = "0"

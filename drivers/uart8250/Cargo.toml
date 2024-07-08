@@ -1,0 +1,14 @@
+[package]
+name = "uart8250"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+interface = { path = "../../../domain-lib/interface"  }
+rref = { path = "../../../domain-lib/rref"  }
+basic = { path = "../../../domain-lib/basic" }
+
+
+uart8250 = { path = "../../../../os-modules/uart-rs/uart8250" }
+spin = "0"

@@ -13,11 +13,10 @@ use alloc::{
 use core::{
     cmp::min,
     fmt::{Debug, Formatter},
-    ops::Range,
 };
 
 use basic::{arch, config::CPU_NUM, io::SafeIORegion, println, sync::Mutex, AlienResult};
-use interface::{Basic, DeviceBase, PLICDomain};
+use interface::{Basic, DeviceBase, PLICDomain, PlicInfo, PlicType};
 use raw_plic::{Mode, PlicIO, PLIC};
 use rref::RRefVec;
 use spin::Once;
@@ -73,10 +72,18 @@ impl Basic for PLICDomainImpl {
 }
 
 impl PLICDomain for PLICDomainImpl {
-    fn init(&self, address_range: &Range<usize>) -> AlienResult<()> {
-        println!("plic region: {:#x?}", address_range);
-        let plic_space = SafeIORegion::from(address_range.clone());
-        let privileges = [2; CPU_NUM];
+    fn init(&self, plic_info: &PlicInfo) -> AlienResult<()> {
+        println!("plic region: {:#x?}", plic_info.device_info);
+        let plic_space = SafeIORegion::from(plic_info.device_info.clone());
+        let privileges = match plic_info.ty {
+            PlicType::Qemu => [2; CPU_NUM],
+            PlicType::SiFive => {
+                let mut privileges = [2; CPU_NUM];
+                // core 0 don't have S mode
+                privileges[0] = 1;
+                privileges
+            }
+        };
         PLIC.call_once(|| PLIC::new(Box::new(SafeIORegionWrapper(plic_space)), privileges));
         println!("Init qemu plic success");
         Ok(())

@@ -1,9 +1,9 @@
 use alloc::{
+    collections::BTreeMap,
     string::{String, ToString},
     sync::{Arc, Weak},
     vec::Vec,
 };
-use alloc::collections::BTreeMap;
 use core::ffi::CStr;
 
 use basic::sync::Mutex;
@@ -63,7 +63,7 @@ impl RootShimDentry {
             mount_point: Mutex::new(None),
             parent: Mutex::new(None),
             path: Mutex::new(String::from("")),
-            children: Mutex::new(HashMap::new()),
+            children: Mutex::new(BTreeMap::new()),
             name: Mutex::new(String::from("")),
         });
         let weak = Arc::downgrade(&(this.clone() as Arc<dyn VfsDentry>));
@@ -88,7 +88,7 @@ impl RootShimDentry {
             mount_point: Mutex::new(None),
             parent: Mutex::new(None),
             path: Mutex::new(String::from("")),
-            children: Mutex::new(HashMap::new()),
+            children: Mutex::new(BTreeMap::new()),
             name: Mutex::new(String::from("")),
         });
         let weak = Arc::downgrade(&(shim_dentry.clone() as Arc<dyn VfsDentry>));

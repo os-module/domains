@@ -29,7 +29,9 @@ members = [
     "xlogger",
     "net_stack",
     "domainfs",
-    "vfs2"
+    "vfs2",
+    "loopback",
+    "uart8250"
 ]
 
 init_members = [
@@ -56,6 +58,7 @@ init_members = [
     "logger",
     "net_stack",
     "domainfs",
+    "uart8250"
 ]
 
 disk_members = [
@@ -66,4 +69,5 @@ disk_members = [
     "random_scheduler",
     "xlogger",
     "vfs2",
+    "loopback"
 ]
