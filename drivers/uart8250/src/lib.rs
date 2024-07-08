@@ -46,10 +46,12 @@ impl UartDomain for Uart8250 {
     }
 
     fn putc(&self, ch: u8) -> AlienResult<()> {
-        UART.get()
-            .unwrap()
-            .write_byte(ch)
-            .expect("uart write error");
+        let uart = UART.get().unwrap();
+        loop {
+            if uart.write_byte(ch).is_ok() {
+                break;
+            }
+        }
         Ok(())
     }
 

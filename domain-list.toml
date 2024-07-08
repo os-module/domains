@@ -31,7 +31,8 @@ members = [
     "domainfs",
     "vfs2",
     "loopback",
-    "uart8250"
+    "uart8250",
+    "mem_block",
 ]
 
 init_members = [
@@ -58,7 +59,8 @@ init_members = [
     "logger",
     "net_stack",
     "domainfs",
-    "uart8250"
+    "uart8250",
+    "mem_block",
 ]
 
 disk_members = [

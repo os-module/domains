@@ -26,7 +26,8 @@ impl MemoryImg {
         }
         let start = block as usize * 512;
         let end = start + data.len();
-        let io_region = self.data.lock().as_bytes();
+        let datalock = self.data.lock();
+        let io_region = datalock.as_bytes();
         let copy_start = min(io_region.len(), start);
         let copy_end = min(io_region.len(), end);
         data[..copy_end - copy_start].copy_from_slice(&io_region[copy_start..copy_end]);
@@ -39,7 +40,11 @@ impl MemoryImg {
         }
         let start = block as usize * 512;
         let end = start + data.len();
-        let io_region = self.data.lock().as_mut_bytes();
+        // let io_region = self.data.lock().as_mut_bytes();
+
+        let mut data_lock = self.data.lock();
+        let io_region = data_lock.as_mut_bytes();
+
         let copy_start = min(io_region.len(), start);
         let copy_end = min(io_region.len(), end);
         io_region[copy_start..copy_end].copy_from_slice(&data[..copy_end - copy_start]);
