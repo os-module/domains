@@ -1,7 +1,6 @@
 #![no_std]
 #![forbid(unsafe_code)]
 #![feature(trait_upcasting)]
-mod shim;
 
 extern crate alloc;
 use alloc::{
@@ -12,16 +11,17 @@ use alloc::{
     vec::Vec,
 };
 use core::{
+    ffi::CStr,
     fmt::{Debug, Formatter},
     ops::Index,
     sync::atomic::AtomicU64,
 };
 
 use basic::{println, sync::Mutex, *};
-use interface::{Basic, DirEntryWrapper, DomainType, FsDomain, InodeID, VfsDomain};
+use interface::{Basic, DirEntryWrapper, DomainType, FsDomain, InodeID, MountInfo, VfsDomain};
 use rref::{RRef, RRefVec};
 use spin::Once;
-use vfs_common::shim::RootShimDentry;
+use vfs_common::shim::{FsShimInode, RootShimDentry};
 use vfscore::{
     dentry::VfsDentry,
     fstype::{FileSystemFlags, VfsFsType},
@@ -32,8 +32,6 @@ use vfscore::{
         VfsTimeSpec,
     },
 };
-
-use crate::shim::MountDevShimInode;
 
 pub static VFS_DOMAIN: Once<Arc<dyn VfsDomain>> = Once::new();
 
@@ -100,15 +98,31 @@ impl FsDomain for GenericFsDomain {
         println!("{} FsDomain init", self.name);
         Ok(())
     }
-    fn mount(&self, mount_point: &RRefVec<u8>, dev_inode: Option<InodeID>) -> AlienResult<InodeID> {
+    fn mount(
+        &self,
+        mount_point: &RRefVec<u8>,
+        dev_inode: Option<RRef<MountInfo>>,
+    ) -> AlienResult<InodeID> {
         let mount_point = core::str::from_utf8(mount_point.as_slice())
             .unwrap()
             .to_string();
         let dev_inode: Option<Arc<dyn VfsInode>> = match dev_inode {
             None => None,
-            Some(id) => {
-                let vfs_domain = VFS_DOMAIN.get().unwrap().clone();
-                let shim_dev_inode = MountDevShimInode::new(id, vfs_domain);
+            Some(mount_info) => {
+                let id = mount_info.mount_inode_id;
+                let fs_domain_name = CStr::from_bytes_until_nul(mount_info.domain_ident.as_slice())
+                    .unwrap()
+                    .to_str()
+                    .unwrap();
+                let fs_domain = basic::get_domain(fs_domain_name)
+                    .expect(format!("{} domain not found", fs_domain_name).as_str());
+                let fs_domain = match fs_domain {
+                    DomainType::FsDomain(fs_domain) => fs_domain,
+                    DomainType::DevFsDomain(fs_domain) => fs_domain,
+                    _ => panic!("{} domain not found", fs_domain_name),
+                };
+                let shim_dev_inode =
+                    FsShimInode::new(fs_domain, id, Arc::new(Vec::from(fs_domain_name)));
                 Some(Arc::new(shim_dev_inode))
             }
         };

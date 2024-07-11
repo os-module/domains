@@ -8,6 +8,7 @@ use core::{fmt::Debug, ops::Range};
 use basic::{io::SafeIORegion, println, AlienResult};
 use interface::{Basic, DeviceBase, UartDomain};
 use raw_uart16550::{InterruptTypes, Uart16550, Uart16550IO};
+use rref::RRefVec;
 use spin::Once;
 
 static UART: Once<Uart16550<u8>> = Once::new();
@@ -53,7 +54,11 @@ impl UartDomain for UartDomainImpl {
     }
 
     fn putc(&self, ch: u8) -> AlienResult<()> {
-        UART.get().unwrap().write(&[ch]);
+        let uart = UART.get().unwrap();
+        if ch == b'\n' {
+            uart.write(&[b'\r']);
+        }
+        uart.write(&[ch]);
         Ok(())
     }
 
@@ -66,6 +71,11 @@ impl UartDomain for UartDomainImpl {
         } else {
             Ok(Some(buf[0]))
         }
+    }
+
+    fn put_bytes(&self, buf: &RRefVec<u8>) -> AlienResult<usize> {
+        let w = UART.get().unwrap().write(buf.as_slice());
+        Ok(w)
     }
 
     fn have_data_to_get(&self) -> AlienResult<bool> {

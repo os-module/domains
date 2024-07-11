@@ -7,6 +7,7 @@ use core::fmt::Debug;
 
 use basic::{println, sync::Mutex, AlienError, AlienResult};
 use interface::{Basic, BufUartDomain, DeviceBase, DomainType, UartDomain};
+use rref::RRefVec;
 use spin::Once;
 
 static UART: Once<Arc<dyn UartDomain>> = Once::new();
@@ -80,9 +81,6 @@ impl BufUartDomain for Uart {
 
     fn putc(&self, ch: u8) -> AlienResult<()> {
         let uart = UART.get().unwrap();
-        if ch == b'\n' {
-            uart.putc(b'\r')?;
-        }
         uart.putc(ch)
     }
 
@@ -98,6 +96,11 @@ impl BufUartDomain for Uart {
                 return Ok(inner.rx_buf.pop_front());
             }
         }
+    }
+
+    fn put_bytes(&self, buf: &RRefVec<u8>) -> AlienResult<usize> {
+        let uart = UART.get().unwrap();
+        uart.put_bytes(buf)
     }
 
     fn have_data_to_get(&self) -> AlienResult<bool> {

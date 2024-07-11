@@ -3,7 +3,7 @@ use core::fmt::Debug;
 
 use basic::AlienResult;
 use generic::GenericFsDomain;
-use interface::{Basic, DevFsDomain, DirEntryWrapper, DomainType, FsDomain, InodeID};
+use interface::{Basic, DevFsDomain, DirEntryWrapper, DomainType, FsDomain, InodeID, MountInfo};
 use rref::{RRef, RRefVec};
 use vfscore::{fstype::FileSystemFlags, inode::InodeAttr, superblock::SuperType, utils::*};
 
@@ -34,7 +34,7 @@ impl FsDomain for DevFsDomainImpl {
         self.generic_fs.init()
     }
 
-    fn mount(&self, mp: &RRefVec<u8>, dev_inode: Option<InodeID>) -> AlienResult<InodeID> {
+    fn mount(&self, mp: &RRefVec<u8>, dev_inode: Option<RRef<MountInfo>>) -> AlienResult<InodeID> {
         self.generic_fs.mount(mp, dev_inode)
     }
 

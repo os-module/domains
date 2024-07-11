@@ -8,7 +8,4 @@ edition = "2021"
 interface = { path = "../../../domain-lib/interface"  }
 rref = { path = "../../../domain-lib/rref"  }
 basic = { path = "../../../domain-lib/basic" }
-
-
-uart8250 = { git = "https://github.com/os-module/uart-rs" }
 spin = "0"

@@ -9,6 +9,7 @@ use basic::{
 };
 use interface::{BufUartDomain, TaskDomain};
 use pod::Pod;
+use rref::RRefVec;
 use vfscore::{
     error::VfsError,
     file::VfsFile,
@@ -17,6 +18,7 @@ use vfscore::{
     utils::{VfsFileStat, VfsNodeType, VfsPollEvents},
     VfsResult,
 };
+
 #[derive(Debug, Default)]
 pub struct IoData {
     foreground_pgid: u32,
@@ -77,7 +79,8 @@ impl VfsFile for UARTDevice {
         Ok(read_count)
     }
     fn write_at(&self, _offset: u64, buf: &[u8]) -> VfsResult<usize> {
-        buf.iter().for_each(|c| self.device.putc(*c).unwrap());
+        let buf = RRefVec::from_slice(buf);
+        self.device.put_bytes(&buf).unwrap();
         Ok(buf.len())
     }
     fn poll(&self, event: VfsPollEvents) -> VfsResult<VfsPollEvents> {

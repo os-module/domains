@@ -2,8 +2,8 @@ use alloc::{format, string::ToString, sync::Arc, vec::Vec};
 use core::ffi::CStr;
 
 use basic::{constants::io::OpenFlags, println, println_color, sync::Mutex};
-use interface::{DomainType, VFS_ROOT_ID, VFS_STDERR_ID, VFS_STDIN_ID, VFS_STDOUT_ID};
-use rref::RRefVec;
+use interface::*;
+use rref::{RRef, RRefVec};
 use spin::{Lazy, Once};
 use vfs_common::meta::KernelFileMeta;
 use vfscore::{dentry::VfsDentry, path::VfsPath, VfsResult};
@@ -116,9 +116,24 @@ fn init_filesystem_before(initrd: &[u8]) -> VfsResult<Arc<dyn VfsDentry>> {
                 .join("/dev/sda")?
                 .open(None)
                 .expect("open /dev/sda failed");
-            let id = insert_dentry(blk_inode, OpenFlags::O_RDWR);
+            let _id = insert_dentry(blk_inode.clone(), OpenFlags::O_RDWR);
             let mp = RRefVec::from_slice(b"/tests");
-            let root_inode_id = fatfs.mount(&mp, Some(id)).unwrap();
+            let blk_inode = blk_inode
+                .downcast_arc::<RootShimDentry>()
+                .map_err(|_| "blk_inode downcast failed")
+                .unwrap();
+            let domain_ident = blk_inode.fs_domain_ident_str();
+            let mount_inode_id = blk_inode.inode_id();
+            let info = MountInfo {
+                mount_inode_id,
+                domain_ident: {
+                    let mut ident = [0; 32];
+                    let min_copy = core::cmp::min(ident.len(), domain_ident.len());
+                    ident[..min_copy].copy_from_slice(&domain_ident.as_bytes()[..min_copy]);
+                    ident
+                },
+            };
+            let root_inode_id = fatfs.mount(&mp, Some(RRef::new(info))).unwrap();
             let shim_inode =
                 RootShimDentry::new(fatfs, root_inode_id, Arc::new(Vec::from("fatfs-1")));
             path.join("tests")?.mount(shim_inode, 0)?;
