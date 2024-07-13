@@ -67,7 +67,7 @@ impl Basic for MemoryImg {
 impl BlkDeviceDomain for MemoryImg {
     fn init(&self, device_info: &Range<usize>) -> AlienResult<()> {
         let region = device_info;
-        println!("virtio_blk_addr: {:#x}-{:#x}", region.start, region.end);
+        println!("mem block: {:#x}-{:#x}", region.start, region.end);
         let io_region = SafeIORegion::from(device_info.clone());
         *self.data.lock() = io_region;
         Ok(())
