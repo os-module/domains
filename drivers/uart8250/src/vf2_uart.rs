@@ -31,6 +31,9 @@ impl<const W: usize> Uart8250<W> {
     }
 
     pub fn putc(&self, ch: u8) -> AlienResult<()> {
+        if ch == b'\n' {
+            self.loop_putc(b'\r')?;
+        }
         self.loop_putc(ch)
     }
 
