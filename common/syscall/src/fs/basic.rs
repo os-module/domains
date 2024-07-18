@@ -583,14 +583,17 @@ pub fn sys_getcwd(
         return Err(AlienError::EINVAL);
     }
     let (_, cwd) = task_domain.fs_info()?;
-    let mut tmp_buf = RRefVec::<u8>::new(0, size);
+    let mut tmp_buf = RRefVec::<u8>::new(0, 128);
     let r;
     (tmp_buf, r) = vfs.vfs_get_path(cwd, tmp_buf)?;
     // let cwd = core::str::from_utf8(&tmp_buf.as_slice()[..r]).unwrap();
     info!("<sys_getcwd> buf: {:#x} size: {:?} r: {:?}", buf, size, r);
-    // println!("<sys_getcwd> cwd: {:?}", cwd);
-    task_domain.copy_to_user(buf, &tmp_buf.as_slice()[..r])?;
-    Ok(r as isize)
+    // basic::println!("<sys_getcwd> cwd: {:?}", cwd);
+    if r + 1 > size {
+        return Err(AlienError::ERANGE);
+    }
+    task_domain.copy_to_user(buf, &tmp_buf.as_slice()[..r + 1])?;
+    Ok(buf as isize)
 }
 
 pub fn sys_mkdirat(
