@@ -50,9 +50,7 @@ pub fn sys_mmap(
         "mmap: start: {:#x}, len: {:#x}, prot: {:?}, flags: {:?}, fd: {}, offset: {:#x}",
         addr, len, prot, flags, fd, offset
     );
-    let res = task_domain
-        .do_mmap(addr, len, prot.bits(), flags.bits(), fd, offset)
-        .map(|addr| addr);
+    let res = task_domain.do_mmap(addr, len, prot.bits(), flags.bits(), fd, offset);
     info!("mmap: res: {:#x?}", res);
     res
 }

@@ -27,7 +27,7 @@ impl CustomRootInode {
         }
     }
     pub fn insert_inode(&self, name: String, inode: Arc<dyn VfsInode>) {
-        if self.children.lock().iter().find(|x| x.0 == name).is_none() {
+        if !self.children.lock().iter().any(|x| x.0 == name) {
             self.children.lock().push((name.to_string(), inode));
         }
     }

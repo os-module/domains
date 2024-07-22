@@ -207,7 +207,7 @@ pub fn sys_faccessat(
     let flag = FaccessatFlags::from_bits_truncate(flag as u32);
     let mut tmp_buf = RRefVec::<u8>::new(0, 256);
     let len;
-    (tmp_buf, len) = task_domain.read_string_from_user(path as usize, tmp_buf)?;
+    (tmp_buf, len) = task_domain.read_string_from_user(path, tmp_buf)?;
     let path = core::str::from_utf8(&tmp_buf.as_slice()[..len]).unwrap();
     info!(
         "<sys_faccessat> path: {:?} flag: {:?} mode: {:?}",
@@ -350,16 +350,28 @@ pub fn sys_sendfile(
     Ok(total as isize)
 }
 
+pub struct SelectArgs {
+    pub nfds: usize,
+    pub readfds: usize,
+    pub writefds: usize,
+    pub exceptfds: usize,
+    pub timeout: usize,
+    pub sigmask: usize,
+}
+
 pub fn sys_pselect6(
     vfs: &Arc<dyn VfsDomain>,
     task_domain: &Arc<dyn TaskDomain>,
-    nfds: usize,
-    readfds: usize,
-    writefds: usize,
-    exceptfds: usize,
-    timeout: usize,
-    sigmask: usize,
+    args: SelectArgs,
 ) -> AlienResult<isize> {
+    let SelectArgs {
+        nfds,
+        readfds,
+        writefds,
+        exceptfds,
+        timeout,
+        sigmask,
+    } = args;
     debug!(
         "<sys_pselect6> nfds: {:?} readfds: {:?} writefds: {:?} exceptfds: {:?} timeout: {:?} sigmask: {:?}",
         nfds, readfds, writefds, exceptfds, timeout, sigmask
@@ -372,7 +384,7 @@ pub fn sys_pselect6(
         debug!("pselect6: timeout = {:#x} ---> {:?}", timeout, time_spec);
         (
             Some(time_spec.to_clock() + TimeSpec::now().to_clock()),
-            Some(time_spec.clone()),
+            Some(time_spec),
         )
     } else {
         (Some(usize::MAX), None)
@@ -519,7 +531,7 @@ pub fn sys_ppoll(
             }
             let range = (idx * core::mem::size_of::<PollFd>())
                 ..((idx + 1) * core::mem::size_of::<PollFd>());
-            fds[range].copy_from_slice(&pfd.as_bytes());
+            fds[range].copy_from_slice(pfd.as_bytes());
         }
         if res > 0 {
             // copy to user

@@ -56,6 +56,12 @@ pub struct PLICDomainImpl {
     count: Mutex<BTreeMap<usize, usize>>,
 }
 
+impl Default for PLICDomainImpl {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PLICDomainImpl {
     pub fn new() -> Self {
         Self {

@@ -26,6 +26,12 @@ use crate::{processor::current_task, vfs_shim::ShimFile};
 #[derive(Debug)]
 pub struct TaskDomainImpl {}
 
+impl Default for TaskDomainImpl {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TaskDomainImpl {
     pub fn new() -> Self {
         Self {}

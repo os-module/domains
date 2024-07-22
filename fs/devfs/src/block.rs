@@ -60,7 +60,7 @@ impl VfsInode for BLKDevice {
     fn get_attr(&self) -> VfsResult<VfsFileStat> {
         Ok(VfsFileStat {
             st_rdev: self.device_id.id(),
-            st_size: self.device.get_capacity().unwrap() as u64,
+            st_size: self.device.get_capacity().unwrap(),
             st_blksize: 512,
             ..Default::default()
         })

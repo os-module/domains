@@ -124,7 +124,7 @@ impl VfsDentry for RootShimDentry {
         let name = core::str::from_utf8(&buf.as_slice()[..l])
             .unwrap()
             .to_string();
-        *self.name.lock() = name.clone();
+        self.name.lock().clone_from(&name);
         name
     }
 
@@ -224,8 +224,7 @@ impl VfsDentry for RootShimDentry {
 
     fn remove(&self, name: &str) -> Option<Arc<dyn VfsDentry>> {
         let shared_name = RRefVec::from_slice(name.as_bytes());
-        let _inode_id = self
-            .fs_domain
+        self.fs_domain
             .dentry_remove(self.inode_id, &shared_name)
             .unwrap();
         self.children.lock().remove(name);
@@ -272,7 +271,7 @@ impl VfsDentry for RootShimDentry {
         let path = core::str::from_utf8(&buf.as_slice()[..l])
             .unwrap()
             .to_string();
-        *self.path.lock() = path.clone();
+        self.path.lock().clone_from(&path);
         path
     }
 }
@@ -376,8 +375,7 @@ impl VfsInode for FsShimInode {
             .ok_or(VfsError::Invalid)
     }
     fn node_perm(&self) -> VfsNodePerm {
-        let perm = self.fs_domain.node_permission(self.ino).unwrap();
-        perm
+        self.fs_domain.node_permission(self.ino).unwrap()
     }
     fn create(
         &self,
@@ -511,8 +509,7 @@ impl VfsSuperBlock for ShimSuperBlock {
     }
 
     fn super_type(&self) -> SuperType {
-        let ty = self.fs_domain.super_type().unwrap();
-        ty
+        self.fs_domain.super_type().unwrap()
     }
 
     fn fs_type(&self) -> Arc<dyn VfsFsType> {
@@ -550,8 +547,7 @@ impl VfsFsType for ShimFs {
     }
 
     fn fs_flag(&self) -> FileSystemFlags {
-        let flag = self.fs_domain.fs_flag().unwrap();
-        flag
+        self.fs_domain.fs_flag().unwrap()
     }
 
     fn fs_name(&self) -> String {

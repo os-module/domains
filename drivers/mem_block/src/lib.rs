@@ -13,6 +13,12 @@ pub struct MemoryImg {
     data: Mutex<SafeIORegion>,
 }
 
+impl Default for MemoryImg {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MemoryImg {
     pub fn new() -> Self {
         MemoryImg {

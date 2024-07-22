@@ -19,6 +19,12 @@ pub struct RandomScheduler {
     tasks: TaskList,
 }
 
+impl Default for RandomScheduler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RandomScheduler {
     pub fn new() -> Self {
         println!("RandomScheduler: new");

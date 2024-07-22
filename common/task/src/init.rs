@@ -8,7 +8,7 @@ use crate::{kthread, processor::add_task, task::Task, vfs_shim::read_all};
 pub static INIT_PROCESS: Lazy<Arc<Task>> = Lazy::new(|| {
     let mut data = Vec::new();
     read_all("/tests/init", &mut data);
-    assert!(data.len() > 0);
+    assert!(!data.is_empty());
     let task = Task::from_elf("/tests/init", data.as_slice()).unwrap();
     Arc::new(task)
 });

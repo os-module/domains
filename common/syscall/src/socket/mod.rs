@@ -179,13 +179,10 @@ pub fn sys_recvfrom(
     task_domain: &Arc<dyn TaskDomain>,
     vfs_domain: &Arc<dyn VfsDomain>,
     net_stack_domain: &Arc<dyn NetDomain>,
-    fd: usize,
-    buf: usize,
-    len: usize,
-    flags: usize,
-    addr: usize,
-    addr_len: usize,
+    args: [usize; 6],
 ) -> AlienResult<isize> {
+    let (fd, buf, len, flags, addr, addr_len) =
+        (args[0], args[1], args[2], args[3], args[4], args[5]);
     error!(
         "<recv_from> fd: {}, buf: {:#x}, len: {}, flags: {}, addr: {:#x}, addr_len: {}",
         fd, buf, len, flags, addr, addr_len
@@ -233,13 +230,10 @@ pub fn sys_sendto(
     task_domain: &Arc<dyn TaskDomain>,
     vfs_domain: &Arc<dyn VfsDomain>,
     net_stack_domain: &Arc<dyn NetDomain>,
-    fd: usize,
-    buf: usize,
-    len: usize,
-    flags: usize,
-    addr: usize,
-    addr_len: usize,
+    args: [usize; 6],
 ) -> AlienResult<isize> {
+    let (fd, buf, len, flags, addr, addr_len) =
+        (args[0], args[1], args[2], args[3], args[4], args[5]);
     error!(
         "<sys_sendto> fd: {}, buf: {:#x}, len: {}, flags: {}, addr: {:#x}, addr_len: {:#x}",
         fd, buf, len, flags, addr, addr_len
@@ -314,12 +308,9 @@ pub fn sys_set_socket_opt(
     task_domain: &Arc<dyn TaskDomain>,
     vfs_domain: &Arc<dyn VfsDomain>,
     _net_stack_domain: &Arc<dyn NetDomain>,
-    fd: usize,
-    level: usize,
-    opt_name: usize,
-    opt_value: usize,
-    opt_len: usize,
+    args: [usize; 5],
 ) -> AlienResult<isize> {
+    let (fd, level, opt_name, opt_value, opt_len) = (args[0], args[1], args[2], args[3], args[4]);
     error!(
         "<sys_set_socket_opt> fd: {}, level: {}, opt_name: {}, opt_value: {:#x}, opt_len: {}",
         fd, level, opt_name, opt_value, opt_len
@@ -351,12 +342,9 @@ pub fn sys_get_socket_opt(
     task_domain: &Arc<dyn TaskDomain>,
     vfs_domain: &Arc<dyn VfsDomain>,
     _net_stack_domain: &Arc<dyn NetDomain>,
-    fd: usize,
-    level: usize,
-    opt_name: usize,
-    opt_value: usize,
-    opt_len: usize,
+    args: [usize; 5],
 ) -> AlienResult<isize> {
+    let (fd, level, opt_name, opt_value, opt_len) = (args[0], args[1], args[2], args[3], args[4]);
     error!(
         "<sys_get_socket_opt> fd: {}, level: {}, opt_name: {}, opt_value: {:#x}, opt_len: {}",
         fd, level, opt_name, opt_value, opt_len

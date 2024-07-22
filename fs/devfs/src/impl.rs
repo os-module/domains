@@ -183,8 +183,7 @@ impl FsDomain for DevFsDomainImpl {
     }
 
     fn get_attr(&self, inode: InodeID) -> AlienResult<VfsFileStat> {
-        let attr = self.generic_fs.get_attr(inode);
-        attr
+        self.generic_fs.get_attr(inode)
     }
 
     fn inode_type(&self, inode: InodeID) -> AlienResult<VfsNodeType> {

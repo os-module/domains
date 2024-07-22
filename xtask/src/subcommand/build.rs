@@ -30,11 +30,11 @@ pub fn build_single(name: &str, log: &str) {
     }
     let init_members = config.domains.get("init_members").unwrap();
     if init_members.contains(&r_name.to_string()) {
-        build_domain(&name, log, "init");
+        build_domain(name, log, "init");
     } else {
         let disk_members = config.domains.get("disk_members").unwrap();
         if disk_members.contains(&r_name.to_string()) {
-            build_domain(&name, log, "disk");
+            build_domain(name, log, "disk");
         } else {
             println!(
                 "Domain [{}] is not in the init or disk members list, skip building",

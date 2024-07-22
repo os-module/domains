@@ -12,12 +12,22 @@ pub enum DomainType {
     Driver,
 }
 
-impl DomainType {
-    pub fn to_string(&self) -> String {
-        match self {
+impl From<DomainType> for String {
+    fn from(val: DomainType) -> Self {
+        match val {
             DomainType::Common => "common".to_string(),
             DomainType::Fs => "fs".to_string(),
             DomainType::Driver => "drivers".to_string(),
+        }
+    }
+}
+
+impl AsRef<str> for DomainType {
+    fn as_ref(&self) -> &str {
+        match self {
+            DomainType::Common => "common",
+            DomainType::Fs => "fs",
+            DomainType::Driver => "drivers",
         }
     }
 }
@@ -62,7 +72,7 @@ pub fn create_domain(name: &str) {
 }
 
 fn create_lib_crate(interface_name: &str, domain_name: &str, ty: DomainType) {
-    let path = PathBuf::from(format!("./{}/{}", ty.to_string(), domain_name));
+    let path = PathBuf::from(format!("./{}/{}", ty.as_ref(), domain_name));
     if path.exists() {
         println!("Error: the domain project already exists");
         return;
@@ -126,7 +136,7 @@ fn create_bin_crate(interface_name: &str, domain_name: &str, ty: DomainType) {
     let new_content = content
         .replace("PACKAGE", &format!("g{}", domain_name))
         .replace("DOMAIN_NAME", domain_name)
-        .replace("TY", &ty.to_string());
+        .replace("TY", ty.as_ref());
     dep.set_len(0).unwrap();
     dep.seek(std::io::SeekFrom::Start(0)).unwrap();
     dep.write_all(new_content.as_bytes()).unwrap();

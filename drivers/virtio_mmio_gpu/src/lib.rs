@@ -19,6 +19,12 @@ pub struct GPUDomain {
     buffer_range: Once<Range<usize>>,
 }
 
+impl Default for GPUDomain {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GPUDomain {
     pub fn new() -> Self {
         Self {
@@ -72,10 +78,7 @@ impl GpuDomain for GPUDomain {
     }
 
     fn buffer_range(&self) -> AlienResult<Range<usize>> {
-        self.buffer_range
-            .get()
-            .ok_or(AlienError::EINVAL)
-            .map(|r| r.clone())
+        self.buffer_range.get().ok_or(AlienError::EINVAL).cloned()
     }
 }
 

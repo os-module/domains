@@ -15,7 +15,7 @@ fn user_path_at(
     path: &str,
 ) -> AlienResult<(InodeID, InodeID)> {
     info!("user_path_at fd: {}, path:{}", fd, path);
-    let res = if !path.starts_with("/") {
+    let res = if !path.starts_with('/') {
         if fd == AT_FDCWD {
             let fs_context = task_domain.fs_info()?;
             (VFS_ROOT_ID, fs_context.1)

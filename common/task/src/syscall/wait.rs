@@ -63,7 +63,7 @@ fn filter_exit_task(task: &Arc<Task>, pid: isize) -> AlienResult<Option<Arc<Task
         .filter(|child| child.pid() == pid as usize || pid == -1)
         .cloned()
         .collect::<Vec<_>>();
-    if res.len() == 0 {
+    if res.is_empty() {
         return Err(AlienError::ECHILD);
     }
     let term_task = res

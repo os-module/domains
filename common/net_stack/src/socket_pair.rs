@@ -32,13 +32,9 @@ impl SocketFile for SocketPair {
     fn read_at(&self, _offset: usize, buffer: &mut [u8]) -> AlienResult<usize> {
         let mut queue = self.inner.lock();
         let rlen = cmp::min(queue.len(), buffer.len());
-        queue
-            .drain(..rlen)
-            .enumerate()
-            .into_iter()
-            .for_each(|(i, x)| {
-                buffer[i] = x;
-            });
+        queue.drain(..rlen).enumerate().for_each(|(i, x)| {
+            buffer[i] = x;
+        });
         if rlen == 0 {
             Err(AlienError::EBLOCKING)
         } else {
@@ -48,15 +44,11 @@ impl SocketFile for SocketPair {
 
     fn poll(&self, events: PollEvents) -> AlienResult<PollEvents> {
         let mut res = PollEvents::empty();
-        if events.contains(PollEvents::OUT) {
-            if self.inner.lock().len() <= 0x50000 {
-                res |= PollEvents::OUT;
-            }
+        if events.contains(PollEvents::OUT) && self.inner.lock().len() <= 0x50000 {
+            res |= PollEvents::OUT;
         }
-        if events.contains(PollEvents::IN) {
-            if self.inner.lock().len() > 0 {
-                res |= PollEvents::IN;
-            }
+        if events.contains(PollEvents::IN) && self.inner.lock().len() > 0 {
+            res |= PollEvents::IN;
         }
         Ok(res)
     }

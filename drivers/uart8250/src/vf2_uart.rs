@@ -9,13 +9,13 @@ impl<const W: usize> Uart8250<W> {
         Self { region }
     }
     pub fn enable_receive_interrupt(&self) -> AlienResult<()> {
-        let ier = self.region.read_at::<u32>(W * 1)? as u8;
-        self.region.write_at::<u32>(W * 1, (ier | 1) as u32)?;
+        let ier = self.region.read_at::<u32>(W)? as u8;
+        self.region.write_at::<u32>(W, (ier | 1) as u32)?;
         Ok(())
     }
     pub fn disable_receive_interrupt(&self) -> AlienResult<()> {
-        let ier = self.region.read_at::<u32>(W * 1)? as u8;
-        self.region.write_at::<u32>(W * 1, (ier & !1) as u32)?;
+        let ier = self.region.read_at::<u32>(W)? as u8;
+        self.region.write_at::<u32>(W, (ier & !1) as u32)?;
         Ok(())
     }
 
@@ -23,7 +23,7 @@ impl<const W: usize> Uart8250<W> {
         loop {
             let lsr = self.region.read_at::<u32>(W * 5)?;
             if lsr & 0x20 != 0 {
-                self.region.write_at::<u32>(0 * W, ch as _)?;
+                self.region.write_at::<u32>(0, ch as _)?;
                 break;
             }
         }
@@ -40,7 +40,7 @@ impl<const W: usize> Uart8250<W> {
     pub fn getc(&self) -> AlienResult<Option<u8>> {
         let lsr = self.region.read_at::<u32>(W * 5)? as u8;
         if lsr & 1 != 0 {
-            return Ok(Some(self.region.read_at::<u32>(W * 0)? as _));
+            return Ok(Some(self.region.read_at::<u32>(0)? as _));
         }
         Ok(None)
     }

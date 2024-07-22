@@ -17,14 +17,15 @@ pub struct SystemSupportFS {
 
 impl SystemSupportFS {
     pub fn new() -> Self {
-        let mut list = vec![];
-        list.push(("procfs", FileSystemFlags::empty()));
-        list.push(("sysfs", FileSystemFlags::empty()));
-        list.push(("devfs", FileSystemFlags::empty()));
-        list.push(("tmpfs", FileSystemFlags::empty()));
-        list.push(("ramfs", FileSystemFlags::empty()));
-        list.push(("pipefs", FileSystemFlags::empty()));
-        list.push(("fat32", FileSystemFlags::REQUIRES_DEV));
+        let list = vec![
+            ("procfs", FileSystemFlags::empty()),
+            ("sysfs", FileSystemFlags::empty()),
+            ("devfs", FileSystemFlags::empty()),
+            ("tmpfs", FileSystemFlags::empty()),
+            ("ramfs", FileSystemFlags::empty()),
+            ("pipefs", FileSystemFlags::empty()),
+            ("fat32", FileSystemFlags::REQUIRES_DEV),
+        ];
         Self { list }
     }
     pub fn serialize(&self) -> String {
@@ -36,7 +37,7 @@ impl SystemSupportFS {
                 res.push_str("      ");
             }
             res.push_str(name);
-            res.push_str("\n");
+            res.push('\n');
         }
         res
     }

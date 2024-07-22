@@ -59,6 +59,12 @@ impl Debug for NetStack {
     }
 }
 
+impl Default for NetStack {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NetStack {
     pub fn new() -> Self {
         let net_server = Arc::new(NetServer::<NetMod>::new(

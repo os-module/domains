@@ -30,7 +30,7 @@ fn __readdir_from_ty(start_index: usize) -> VfsResult<Option<VfsDirEntry>> {
     if let Some(domain_info) = domain_info {
         let guard = domain_info.lock();
         let tys = &guard.ty_list;
-        let entry = tys.iter().skip(start_index).next().map(|(ty, _)| {
+        let entry = tys.iter().nth(start_index).map(|(ty, _)| {
             let name = format!("{}", ty);
             VfsDirEntry {
                 ino: 0,
@@ -50,8 +50,7 @@ fn __readdir_from_domain_list(start_index: usize) -> VfsResult<Option<VfsDirEntr
         let domains = &guard.domain_list;
         let entry = domains
             .iter()
-            .skip(start_index)
-            .next()
+            .nth(start_index)
             .map(|(name, _)| VfsDirEntry {
                 ino: 0,
                 ty: VfsNodeType::File,
@@ -65,7 +64,7 @@ fn __readdir_from_domain_list(start_index: usize) -> VfsResult<Option<VfsDirEntr
 
 impl VfsFile for DomainTyInfoDir {
     fn readdir(&self, start_index: usize) -> VfsResult<Option<VfsDirEntry>> {
-        return __readdir_from_ty(start_index);
+        __readdir_from_ty(start_index)
     }
 }
 

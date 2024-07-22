@@ -14,6 +14,12 @@ pub struct LoopBackNetDevice {
     packet: Mutex<VecDeque<RRefVec<u8>>>,
 }
 
+impl Default for LoopBackNetDevice {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LoopBackNetDevice {
     pub fn new() -> Self {
         Self {

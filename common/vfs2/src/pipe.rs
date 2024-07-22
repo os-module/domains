@@ -50,13 +50,13 @@ impl PipeFile {
 
 impl File for PipeFile {
     fn read(&self, buf: &mut [u8]) -> AlienResult<usize> {
-        if buf.len() == 0 {
+        if buf.is_empty() {
             return Ok(0);
         }
         self.inode_copy.read_at(0, buf).map_err(|e| e.into())
     }
     fn write(&self, buf: &[u8]) -> AlienResult<usize> {
-        if buf.len() == 0 {
+        if buf.is_empty() {
             return Ok(0);
         }
         self.inode_copy.write_at(0, buf).map_err(|e| e.into())
@@ -274,15 +274,11 @@ impl VfsFile for PipeInode {
     fn poll(&self, event: VfsPollEvents) -> VfsResult<VfsPollEvents> {
         let data = self.data.lock();
         let mut res = VfsPollEvents::empty();
-        if event.contains(VfsPollEvents::IN) {
-            if data.available_read() > 0 {
-                res |= VfsPollEvents::IN;
-            }
+        if event.contains(VfsPollEvents::IN) && data.available_read() > 0 {
+            res |= VfsPollEvents::IN;
         }
-        if event.contains(VfsPollEvents::OUT) {
-            if data.available_write() > 0 {
-                res |= VfsPollEvents::OUT
-            }
+        if event.contains(VfsPollEvents::OUT) && data.available_write() > 0 {
+            res |= VfsPollEvents::OUT
         }
         let is_reader = data.is_read_wait();
         let is_sender = data.is_write_wait();

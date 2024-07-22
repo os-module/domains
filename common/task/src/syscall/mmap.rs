@@ -94,7 +94,7 @@ pub fn do_mmap(
             return Err(AlienError::EINVAL);
         }
         // check if the region is already mapped
-        if let Some(region) = mmap.get_region(start).map(|region| region.clone()) {
+        if let Some(region) = mmap.get_region(start).cloned() {
             // split the region
             let (left, mut right) = region.split(start);
             // delete the old region
@@ -134,8 +134,7 @@ pub fn do_mmap(
         }
         start..start + len
     } else {
-        let v_range = mmap.alloc(len);
-        v_range
+        mmap.alloc(len)
     };
     let region = MMapRegion::new(
         v_range.start,

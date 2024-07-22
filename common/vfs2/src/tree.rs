@@ -34,7 +34,7 @@ fn common_load_or_create_fs(
         (basic::get_domain(name).unwrap(), Arc::new(Vec::from(name)))
     };
 
-    let root = match fs_domain {
+    (match fs_domain {
         DomainType::FsDomain(fs) => {
             if !is_init_done {
                 let mp = RRefVec::from_slice(mp);
@@ -46,8 +46,7 @@ fn common_load_or_create_fs(
             }
         }
         _ => panic!("{} domain not found", name),
-    };
-    root
+    }) as _
 }
 
 fn init_filesystem_before(initrd: &[u8]) -> VfsResult<Arc<dyn VfsDentry>> {

@@ -47,9 +47,9 @@ impl NotLeafPage<Rv64PTE> for FrameTrackerWrapper {
     }
 }
 
-impl Into<FrameTrackerWrapper> for FrameTracker {
-    fn into(self) -> FrameTrackerWrapper {
-        FrameTrackerWrapper(self)
+impl From<FrameTracker> for FrameTrackerWrapper {
+    fn from(val: FrameTracker) -> Self {
+        FrameTrackerWrapper(val)
     }
 }
 
@@ -343,7 +343,7 @@ pub fn build_vm_space(elf: &[u8], args: &mut Vec<String>, name: &str) -> AlienRe
         .program_iter()
         .find(|x| x.get_type().unwrap() == Type::Tls)
         .map(|ph| ph.virtual_addr())
-        .unwrap_or(0 + bias as u64);
+        .unwrap_or(bias as u64);
     info!("ELF tls: {:#x}", tls);
 
     let mut address_space = VmSpace::new();

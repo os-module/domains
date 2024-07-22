@@ -49,22 +49,17 @@ mod tree;
 static NET_STACK_DOMAIN: Once<Arc<dyn NetDomain>> = Once::new();
 static VFS_MAP: RwLock<BTreeMap<InodeID, Arc<dyn File>>> = RwLock::new(BTreeMap::new());
 
-static INODE_ID: Lazy<Arc<AtomicU64, DataStorageHeap>> = Lazy::new(|| {
-    let id = storage::get_or_insert_with_data("inode_id", || AtomicU64::new(4));
-    id
-});
+static INODE_ID: Lazy<Arc<AtomicU64, DataStorageHeap>> =
+    Lazy::new(|| storage::get_or_insert_with_data("inode_id", || AtomicU64::new(4)));
 
-static VFS_INIT: Lazy<Arc<AtomicBool, DataStorageHeap>> = Lazy::new(|| {
-    let res = storage::get_or_insert_with_data("vfs_init", || AtomicBool::new(false));
-    res
-});
+static VFS_INIT: Lazy<Arc<AtomicBool, DataStorageHeap>> =
+    Lazy::new(|| storage::get_or_insert_with_data("vfs_init", || AtomicBool::new(false)));
 
 type DataType = Arc<Mutex<BTreeMap<InodeID, (), DataStorageHeap>>, DataStorageHeap>;
 static VFS_MAP_SHADOW: Lazy<DataType> = Lazy::new(|| {
-    let res = storage::get_or_insert_with_data("inode2inode", || {
+    storage::get_or_insert_with_data("inode2inode", || {
         Mutex::new(BTreeMap::new_in(DataStorageHeap::build()))
-    });
-    res
+    })
 });
 
 fn insert_dentry(dentry: Arc<dyn VfsDentry>, open_flags: OpenFlags) -> InodeID {
@@ -91,7 +86,7 @@ fn remove_file(inode: InodeID) {
 }
 
 fn get_file(inode: InodeID) -> Option<Arc<dyn File>> {
-    VFS_MAP.read().get(&inode).map(|f| f.clone())
+    VFS_MAP.read().get(&inode).cloned()
 }
 
 #[derive(Debug)]
@@ -279,11 +274,11 @@ impl VfsDomain for VfsDomainImpl {
                 Ok(0)
             }
             Fcntl64Cmd::F_GETFD => {
-                return if file.get_open_flag().contains(OpenFlags::O_CLOEXEC) {
+                if file.get_open_flag().contains(OpenFlags::O_CLOEXEC) {
                     Ok(1)
                 } else {
                     Ok(0)
-                };
+                }
             }
             Fcntl64Cmd::F_SETFD => {
                 debug!("fcntl: F_SETFD :{:?}", args & FD_CLOEXEC);
@@ -295,9 +290,7 @@ impl VfsDomain for VfsDomainImpl {
                 }
                 Ok(0)
             }
-            Fcntl64Cmd::F_GETFL => {
-                return Ok(file.get_open_flag().bits() as isize);
-            }
+            Fcntl64Cmd::F_GETFL => Ok(file.get_open_flag().bits() as isize),
             Fcntl64Cmd::F_SETFL => {
                 let flag = OpenFlags::from_bits_truncate(args);
                 debug!("fcntl: F_SETFL :{:?}", flag,);

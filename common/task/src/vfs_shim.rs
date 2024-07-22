@@ -89,7 +89,7 @@ pub fn read_all(file_name: &str, buf: &mut Vec<u8>) -> bool {
 fn user_path_at(fd: isize, path: &str) -> AlienResult<(InodeID, InodeID)> {
     info!("user_path_at fd: {},path:{}", fd, path);
     let task = current_task().unwrap();
-    let res = if !path.starts_with("/") {
+    let res = if !path.starts_with('/') {
         if fd == AT_FDCWD {
             let fs_context = &task.inner().fs_info;
             (VFS_ROOT_ID, fs_context.cwd.id)

@@ -72,12 +72,11 @@ impl FdManager {
         }
     }
     pub fn get(&self, fd: usize) -> Option<Arc<ShimFile>> {
-        self.fd_table.get(fd).map(|x| x.clone())
+        self.fd_table.get(fd).cloned()
     }
 
     pub fn insert(&mut self, file: Arc<ShimFile>) -> usize {
-        let index = self.fd_table.put(file);
-        index
+        self.fd_table.put(file)
     }
 
     pub fn remove(&mut self, fd: usize) -> Option<Arc<ShimFile>> {
@@ -197,7 +196,7 @@ impl UserStack {
 
     fn push_vec_u64(
         &mut self,
-        data: &Vec<u64>,
+        data: &[u64],
         vm_space: &mut VmSpace<VmmPageAllocator>,
     ) -> AlienResult<()> {
         for data in data.iter() {
@@ -352,12 +351,9 @@ impl MMapInfo {
     }
 
     pub fn get_region(&self, addr: usize) -> Option<&MMapRegion> {
-        for region in self.regions.iter() {
-            if region.start <= addr && addr < region.start + region.len {
-                return Some(region);
-            }
-        }
-        None
+        self.regions
+            .iter()
+            .find(|&region| region.start <= addr && addr < region.start + region.len)
     }
 
     pub fn remove_region(&mut self, addr: usize) {

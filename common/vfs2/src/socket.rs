@@ -66,7 +66,7 @@ impl SocketFile {
 
 impl File for SocketFile {
     fn read(&self, buf: &mut [u8]) -> AlienResult<usize> {
-        if buf.len() == 0 {
+        if buf.is_empty() {
             return Ok(0);
         }
         let pos = *self.pos.lock();
@@ -75,7 +75,7 @@ impl File for SocketFile {
         Ok(read)
     }
     fn write(&self, buf: &[u8]) -> AlienResult<usize> {
-        if buf.len() == 0 {
+        if buf.is_empty() {
             return Ok(0);
         }
         let pos = *self.pos.lock();
@@ -85,7 +85,7 @@ impl File for SocketFile {
     }
 
     fn read_at(&self, offset: u64, buf: &mut [u8]) -> AlienResult<usize> {
-        if buf.len() == 0 {
+        if buf.is_empty() {
             return Ok(0);
         }
         let open_flag = self.open_flag.lock();
@@ -102,7 +102,7 @@ impl File for SocketFile {
     }
 
     fn write_at(&self, offset: u64, buf: &[u8]) -> AlienResult<usize> {
-        if buf.len() == 0 {
+        if buf.is_empty() {
             return Ok(0);
         }
         let open_flag = self.open_flag.lock();
@@ -132,7 +132,7 @@ impl File for SocketFile {
             SeekFrom::Current(off) => spos.checked_add_signed(off),
             SeekFrom::End(off) => size.checked_add_signed(off),
         }
-        .ok_or_else(|| VfsError::Invalid)?;
+        .ok_or(VfsError::Invalid)?;
         *spos = new_offset;
         Ok(new_offset)
     }

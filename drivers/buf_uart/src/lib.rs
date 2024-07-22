@@ -22,6 +22,12 @@ struct UartInner {
     wait_queue: VecDeque<usize>,
 }
 
+impl Default for Uart {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Uart {
     pub fn new() -> Self {
         let inner = UartInner {
@@ -44,15 +50,11 @@ impl DeviceBase for Uart {
     fn handle_irq(&self) -> AlienResult<()> {
         let mut inner = self.inner.lock();
         let uart = UART.get().unwrap();
-        loop {
-            if let Ok(Some(c)) = uart.getc() {
-                inner.rx_buf.push_back(c);
-                if !inner.wait_queue.is_empty() {
-                    let tid = inner.wait_queue.pop_front().unwrap();
-                    basic::wake_up_wait_task(tid)?
-                }
-            } else {
-                break;
+        while let Ok(Some(c)) = uart.getc() {
+            inner.rx_buf.push_back(c);
+            if !inner.wait_queue.is_empty() {
+                let tid = inner.wait_queue.pop_front().unwrap();
+                basic::wake_up_wait_task(tid)?
             }
         }
         Ok(())

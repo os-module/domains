@@ -30,8 +30,8 @@ pub fn init_procfs(root_dt: &Arc<dyn VfsDentry>) {
         DomainType::FsDomain(ramfs) => {
             let mp = RRefVec::from_slice(b"/proc/self");
             let root_inode_id = ramfs.mount(&mp, None).unwrap();
-            let shim_root_dentry = RootShimDentry::new(ramfs, root_inode_id, name);
-            shim_root_dentry
+
+            RootShimDentry::new(ramfs, root_inode_id, name)
         }
         _ => panic!("ramfs domain not create"),
     };

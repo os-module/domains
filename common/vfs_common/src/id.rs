@@ -7,6 +7,12 @@ pub struct DeviceIdManager {
     map: BTreeMap<u32, u32>,
 }
 
+impl Default for DeviceIdManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DeviceIdManager {
     pub const fn new() -> Self {
         Self {

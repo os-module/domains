@@ -22,6 +22,12 @@ pub struct ShadowBlockDomainImpl {
     blk_domain_name: Once<String>,
 }
 
+impl Default for ShadowBlockDomainImpl {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ShadowBlockDomainImpl {
     pub fn new() -> Self {
         Self {
@@ -71,7 +77,7 @@ impl ShadowBlockDomain for ShadowBlockDomainImpl {
                 let res = basic::reload_domain(blk_domain_name);
                 if res.is_err() {
                     error!("reload domain failed");
-                    return Err(AlienError::DOMAINCRASH);
+                    Err(AlienError::DOMAINCRASH)
                 } else {
                     error!("restart domain ok");
                     data = RRef::new([0u8; 512]);

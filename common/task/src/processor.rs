@@ -6,10 +6,7 @@ use crate::task::Task;
 
 pub fn current_task() -> Option<Arc<Task>> {
     let tid = basic::current_tid().unwrap()?;
-    let task = GLOBAL_TASK_MANAGER
-        .lock()
-        .get(&tid)
-        .map(|task| Arc::clone(task));
+    let task = GLOBAL_TASK_MANAGER.lock().get(&tid).map(Arc::clone);
     task
 }
 
@@ -26,8 +23,5 @@ pub fn remove_task(tid: usize) {
 }
 
 pub fn find_task(tid: usize) -> Option<Arc<Task>> {
-    GLOBAL_TASK_MANAGER
-        .lock()
-        .get(&tid)
-        .map(|task| Arc::clone(task))
+    GLOBAL_TASK_MANAGER.lock().get(&tid).map(Arc::clone)
 }

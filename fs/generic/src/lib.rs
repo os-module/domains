@@ -5,7 +5,6 @@
 extern crate alloc;
 use alloc::{
     collections::BTreeMap,
-    format,
     string::{String, ToString},
     sync::Arc,
     vec::Vec,
@@ -115,7 +114,7 @@ impl FsDomain for GenericFsDomain {
                     .to_str()
                     .unwrap();
                 let fs_domain = basic::get_domain(fs_domain_name)
-                    .expect(format!("{} domain not found", fs_domain_name).as_str());
+                    .unwrap_or_else(|| panic!("{} domain not found", fs_domain_name));
                 let fs_domain = match fs_domain {
                     DomainType::FsDomain(fs_domain) => fs_domain,
                     DomainType::DevFsDomain(fs_domain) => fs_domain,
@@ -127,10 +126,10 @@ impl FsDomain for GenericFsDomain {
             }
         };
         let root = self.fs.i_mount(0, &mount_point, dev_inode, &[])?;
-        match self.mount_func {
-            Some(func) => (func)(&root),
-            None => {}
+        if let Some(func) = self.mount_func {
+            func(&root);
         }
+
         let inode_id = self
             .inode_index
             .fetch_add(1, core::sync::atomic::Ordering::SeqCst);
@@ -161,7 +160,7 @@ impl FsDomain for GenericFsDomain {
             .dentry_map
             .lock()
             .get(&inode)
-            .expect(format!("dentry {} not found in {}", inode, self.name).as_str())
+            .unwrap_or_else(|| panic!("dentry {} not found in {}", inode, self.name))
             .clone();
         let name = inode.name();
         let copy_len = core::cmp::min(name.len(), buf.len());
@@ -190,7 +189,7 @@ impl FsDomain for GenericFsDomain {
         let dentry = self.dentry_map.lock().index(&inode).clone();
         let fs_domain_name = core::str::from_utf8(domain_ident.as_slice()).unwrap();
         let fs_domain = basic::get_domain(fs_domain_name)
-            .expect(format!("{} domain not found", fs_domain_name).as_str());
+            .unwrap_or_else(|| panic!("{} domain not found", fs_domain_name));
         let fs_domain = match fs_domain {
             DomainType::FsDomain(fs_domain) => fs_domain,
             DomainType::DevFsDomain(fs_domain) => fs_domain,
@@ -255,7 +254,7 @@ impl FsDomain for GenericFsDomain {
             .dentry_map
             .lock()
             .get(&inode)
-            .expect(format!("dentry {} not found in {}", inode, self.name).as_str())
+            .unwrap_or_else(|| panic!("dentry {} not found in {}", inode, self.name))
             .clone();
         let mount_point = dentry.mount_point();
         let mount_point = match mount_point {
@@ -457,8 +456,8 @@ impl FsDomain for GenericFsDomain {
         } else {
             let parent = parent_dentry.inode()?;
             let inode = parent.lookup(name)?;
-            let dentry = parent_dentry.insert(name, inode)?;
-            dentry
+
+            parent_dentry.insert(name, inode)?
         };
         // println_color!(31, "<generic> lookup {:?} in dir success", name);
         let inode_id = self

@@ -37,10 +37,8 @@ impl VfsFile for INPUTDevice {
     }
     fn poll(&self, event: VfsPollEvents) -> VfsResult<VfsPollEvents> {
         let mut res = VfsPollEvents::empty();
-        if event.contains(VfsPollEvents::IN) {
-            if self.device.have_event().unwrap() {
-                res |= VfsPollEvents::IN;
-            }
+        if event.contains(VfsPollEvents::IN) && self.device.have_event().unwrap() {
+            res |= VfsPollEvents::IN;
         }
         Ok(res)
     }

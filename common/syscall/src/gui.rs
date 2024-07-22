@@ -6,7 +6,7 @@ use log::info;
 
 pub fn sys_framebuffer_flush(gpu: Option<&Arc<dyn GpuDomain>>) -> AlienResult<isize> {
     info!("<sys_framebuffer_flush>");
-    let gpu = gpu.ok_or_else(|| AlienError::EINVAL)?;
+    let gpu = gpu.ok_or(AlienError::EINVAL)?;
     gpu.flush()?;
     Ok(0)
 }
@@ -15,7 +15,7 @@ pub fn sys_framebuffer(
     task_domain: &Arc<dyn TaskDomain>,
     gpu: Option<&Arc<dyn GpuDomain>>,
 ) -> AlienResult<isize> {
-    let gpu = gpu.ok_or_else(|| AlienError::EINVAL)?;
+    let gpu = gpu.ok_or(AlienError::EINVAL)?;
     let gpu_phy_buf = gpu.buffer_range()?;
     assert_eq!(gpu_phy_buf.start % FRAME_SIZE, 0);
     let device_mmap = task_domain.do_mmap_device(gpu_phy_buf)?;
