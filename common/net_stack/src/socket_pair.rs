@@ -44,11 +44,11 @@ impl SocketFile for SocketPair {
 
     fn poll(&self, events: PollEvents) -> AlienResult<PollEvents> {
         let mut res = PollEvents::empty();
-        if events.contains(PollEvents::OUT) && self.inner.lock().len() <= 0x50000 {
-            res |= PollEvents::OUT;
+        if events.contains(PollEvents::EPOLLOUT) && self.inner.lock().len() <= 0x50000 {
+            res |= PollEvents::EPOLLOUT;
         }
-        if events.contains(PollEvents::IN) && self.inner.lock().len() > 0 {
-            res |= PollEvents::IN;
+        if events.contains(PollEvents::EPOLLIN) && self.inner.lock().len() > 0 {
+            res |= PollEvents::EPOLLIN;
         }
         Ok(res)
     }

@@ -53,12 +53,19 @@ SECTIONS
         *(.header)
     } : phdr
 
-/*    .eh_frame_hdr : ALIGN(4K){*/
-/*        kernel_eh_frame_hdr = .;*/
-/*        *(.eh_frame_hdr .eh_frame_hdr.*)*/
-/*        . = ALIGN(4K);*/
-/*        kernel_eh_frame_hdr_end = .;*/
-/*    }*/
+    .eh_frame_hdr : ALIGN(4K){
+        kernel_eh_frame_hdr = .;
+        KEEP(*(.eh_frame_hdr .eh_frame_hdr.*))
+        . = ALIGN(4K);
+        kernel_eh_frame_hdr_end = .;
+    }
+    .eh_frame : ALIGN(4K){
+        kernel_eh_frame = .;
+        KEEP(*(.eh_frame .eh_frame.*))
+        kernel_eh_frame_end = .;
+    }
+
+    . = ALIGN(4K);
 
     PROVIDE(end = .);
 }

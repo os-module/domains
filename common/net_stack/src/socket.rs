@@ -158,14 +158,14 @@ impl SocketFile for Socket {
 
     fn poll(&self, events: PollEvents) -> AlienResult<PollEvents> {
         let mut res = PollEvents::empty();
-        if events.contains(PollEvents::OUT)
+        if events.contains(PollEvents::EPOLLOUT)
             && !self.inner.is_closed().unwrap()
             && self.inner.get_remote().is_ok()
         {
-            res |= PollEvents::OUT;
+            res |= PollEvents::EPOLLOUT;
         }
-        if self.inner.readable().unwrap() && events.contains(PollEvents::IN) {
-            res |= PollEvents::IN;
+        if self.inner.readable().unwrap() && events.contains(PollEvents::EPOLLIN) {
+            res |= PollEvents::EPOLLIN;
         }
         Ok(res)
     }

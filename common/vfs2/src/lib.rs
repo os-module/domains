@@ -116,8 +116,8 @@ impl VfsDomain for VfsDomainImpl {
 
     fn vfs_poll(&self, inode: InodeID, events: VfsPollEvents) -> AlienResult<VfsPollEvents> {
         let file = get_file(inode).unwrap();
-        let res = file.poll(PollEvents::from_bits_truncate(events.bits()))?;
-        Ok(VfsPollEvents::from_bits_truncate(res.bits()))
+        let res = file.poll(PollEvents::from_bits_truncate(events.bits() as u32))?;
+        Ok(VfsPollEvents::from_bits_truncate(res.bits() as u16))
     }
 
     fn vfs_ioctl(&self, inode: InodeID, cmd: u32, arg: usize) -> AlienResult<usize> {

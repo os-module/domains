@@ -108,11 +108,11 @@ impl File for PipeFile {
     fn is_append(&self) -> bool {
         false
     }
-    fn poll(&self, _event: PollEvents) -> AlienResult<PollEvents> {
+    fn poll(&self, event: PollEvents) -> AlienResult<PollEvents> {
         let res = self
             .inode_copy
-            .poll(VfsPollEvents::from_bits_truncate(_event.bits()))
-            .map(|e| PollEvents::from_bits_truncate(e.bits()));
+            .poll(VfsPollEvents::from_bits_truncate(event.bits() as u16))
+            .map(|e| PollEvents::from_bits_truncate(e.bits() as u32));
         res.map_err(Into::into)
     }
 }

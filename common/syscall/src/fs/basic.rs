@@ -518,16 +518,16 @@ pub fn sys_ppoll(
         for idx in 0..nfds {
             let mut pfd = PollFd::from_bytes(&fds[idx * core::mem::size_of::<PollFd>()..]);
             if let Ok(file) = task_domain.get_fd(pfd.fd as usize) {
-                let vfs_event = VfsPollEvents::from_bits_truncate(pfd.events.bits());
+                let vfs_event = VfsPollEvents::from_bits_truncate(pfd.events.bits() as u16);
                 let event = vfs.vfs_poll(file, vfs_event)?;
                 if !event.is_empty() {
                     res += 1;
                 }
                 debug!("[ppoll]: event: {:?}", event);
-                pfd.revents = PollEvents::from_bits_truncate(event.bits())
+                pfd.revents = PollEvents::from_bits_truncate(event.bits() as u32)
             } else {
                 // todo: error
-                pfd.events = PollEvents::INVAL;
+                pfd.events = PollEvents::EPOLLERR;
             }
             let range = (idx * core::mem::size_of::<PollFd>())
                 ..((idx + 1) * core::mem::size_of::<PollFd>());
