@@ -117,3 +117,27 @@ pub fn sys_get_priority(
         .do_get_priority(which as i32, who as u32)
         .map(|prio| prio as isize)
 }
+
+/// See https://man7.org/linux/man-pages/man2/sigaltstack.2.html
+pub fn sys_sigaltstack(task: &Arc<dyn TaskDomain>, uss: usize, uoss: usize) -> AlienResult<isize> {
+    task.do_signal_stack(uss, uoss)
+}
+
+pub fn sys_futex(
+    task_domain: &Arc<dyn TaskDomain>,
+    uaddr: usize,
+    futex_op: usize,
+    val: usize,
+    val2: usize,
+    uaddr2: usize,
+    val3: usize,
+) -> AlienResult<isize> {
+    task_domain.do_futex(
+        uaddr,
+        futex_op as u32,
+        val as u32,
+        val2,
+        uaddr2,
+        val3 as u32,
+    )
+}

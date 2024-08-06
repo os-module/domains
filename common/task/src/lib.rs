@@ -1,9 +1,11 @@
+#![feature(atomic_from_mut)]
 #![no_std]
 #![forbid(unsafe_code)]
 extern crate alloc;
 #[macro_use]
 extern crate log;
 mod elf;
+mod futex;
 mod init;
 mod kthread;
 mod processor;
@@ -249,6 +251,26 @@ impl TaskDomain for TaskDomainImpl {
     }
     fn do_get_priority(&self, which: i32, who: u32) -> AlienResult<i32> {
         syscall::priority::do_get_priority(which, who)
+    }
+    fn do_signal_stack(&self, ss: usize, oss: usize) -> AlienResult<isize> {
+        syscall::signal::do_signal_stack(ss, oss)
+    }
+    fn do_mprotect(&self, addr: usize, len: usize, prot: u32) -> AlienResult<isize> {
+        syscall::mmap::do_mprotect(addr, len, prot)
+    }
+    fn do_load_page_fault(&self, addr: usize) -> AlienResult<()> {
+        syscall::mmap::do_load_page_fault(addr)
+    }
+    fn do_futex(
+        &self,
+        uaddr: usize,
+        futex_op: u32,
+        val: u32,
+        timeout: usize,
+        uaddr2: usize,
+        val3: u32,
+    ) -> AlienResult<isize> {
+        syscall::futex::futex(uaddr, futex_op, val, timeout, uaddr2, val3)
     }
 }
 

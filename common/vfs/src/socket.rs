@@ -140,8 +140,8 @@ impl File for SocketFile {
     fn get_attr(&self) -> AlienResult<VfsFileStat> {
         Err(AlienError::ENOSYS)
     }
-    fn set_open_flag(&self, _flag: OpenFlags) {
-        panic!("SocketFile can't set open flag")
+    fn set_open_flag(&self, flag: OpenFlags) {
+        *self.open_flag.lock() = flag;
     }
 
     fn get_open_flag(&self) -> OpenFlags {

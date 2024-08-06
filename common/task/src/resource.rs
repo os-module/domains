@@ -356,6 +356,12 @@ impl MMapInfo {
             .find(|&region| region.start <= addr && addr < region.start + region.len)
     }
 
+    pub fn get_region_mut(&mut self, addr: usize) -> Option<&mut MMapRegion> {
+        self.regions
+            .iter_mut()
+            .find(|region| region.start <= addr && addr < region.start + region.len)
+    }
+
     pub fn remove_region(&mut self, addr: usize) {
         let mut index = 0;
         for region in self.regions.iter() {

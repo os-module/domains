@@ -85,6 +85,16 @@ impl SysCallDomain for SysCallDomainImpl {
         }
 
         match syscall_id {
+            19 => sys_eventfd2(&self.vfs_domain, &self.task_domain, args[0], args[1]),
+            20 => sys_poll_createl(&self.vfs_domain, &self.task_domain, args[0]),
+            21 => sys_poll_ctl(
+                &self.vfs_domain,
+                &self.task_domain,
+                args[0],
+                args[1],
+                args[2],
+                args[3],
+            ),
             SYSCALL_GETCWD => sys_getcwd(&self.vfs_domain, &self.task_domain, args[0], args[1]),
             SYSCALL_DUP => sys_dup(&self.task_domain, args[0]),
             SYSCALL_DUP3 => sys_dup2(&self.task_domain, args[0], args[1]),
@@ -223,6 +233,16 @@ impl SysCallDomain for SysCallDomainImpl {
             SYSCALL_SET_TID_ADDRESS => sys_set_tid_address(&self.task_domain, args[0]),
             SYSCALL_CLOCK_GETTIME => sys_clock_gettime(&self.task_domain, args[0], args[1]),
             SYSCALL_YIELD => sys_yield(),
+            SYSCALL_FUTEX => sys_futex(
+                &self.task_domain,
+                args[0],
+                args[1],
+                args[2],
+                args[3],
+                args[4],
+                args[5],
+            ),
+            132 => sys_sigaltstack(&self.task_domain, args[0], args[1]),
             SYSCALL_SIGACTION => sys_sigaction(&self.task_domain, args[0], args[1], args[2]),
             SYSCALL_SIGPROCMASK => {
                 sys_sigprocmask(&self.task_domain, args[0], args[1], args[2], args[3])
@@ -356,8 +376,10 @@ impl SysCallDomain for SysCallDomainImpl {
                 args[4],
                 args[5],
             ),
+            SYSCALL_MPROTECT => sys_mprotect(&self.task_domain, args[0], args[1], args[2]),
             SYSCALL_WAIT4 => sys_wait4(&self.task_domain, args[0], args[1], args[2], args[3]),
             SYSCALL_PRLIMIT => sys_prlimit64(&self.task_domain, args[0], args[1], args[2], args[3]),
+            278 => sys_random(&self.task_domain, args[0], args[1], args[2]),
             888 => sys_load_domain(
                 &self.task_domain,
                 &self.vfs_domain,

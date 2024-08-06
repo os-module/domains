@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
 use basic::{
-    constants::signal::{SigAction, SigProcMaskHow, SignalNumber, SimpleBitSet},
+    constants::signal::{SignalStack, *},
     AlienResult,
 };
 use memory_addr::VirtAddr;
@@ -32,6 +32,12 @@ pub fn do_sigaction(sig: u8, action: usize, old_action: usize) -> AlienResult<is
 }
 
 pub fn do_sigprocmask(how: usize, set: usize, oldset: usize) -> AlienResult<isize> {
+    trace!(
+        "sigprocmask: how: {:x}, set: {:#x}, oldset: {:x}",
+        how,
+        set,
+        oldset
+    );
     let task = current_task().unwrap();
     let mut signal_receivers = task.signal_receivers.lock();
     if oldset != 0 {
@@ -39,7 +45,7 @@ pub fn do_sigprocmask(how: usize, set: usize, oldset: usize) -> AlienResult<isiz
         task.write_val_to_user(VirtAddr::from(oldset), &val)?;
     }
     let how = SigProcMaskHow::try_from(how).unwrap();
-    warn!("sigprocmask: how: {:?}, set: {:#x}", how, set);
+    // println_color!(32,"sigprocmask: how: {:?}, set: {:#x}", how, set);
     if set != 0 {
         let set = task.read_val_from_user::<usize>(VirtAddr::from(set))?;
         match how {
@@ -56,5 +62,22 @@ pub fn do_sigprocmask(how: usize, set: usize, oldset: usize) -> AlienResult<isiz
     }
     let mask: Vec<SignalNumber> = signal_receivers.mask.into();
     trace!("after sigprocmask: {:?}", mask);
+    Ok(0)
+}
+
+/// See https://man7.org/linux/man-pages/man2/sigaltstack.2.html
+pub fn do_signal_stack(uss: usize, uoss: usize) -> AlienResult<isize> {
+    // println_color!(32, "sigaltstack: uss: {:x}, uoss: {:x}", uss, uoss);
+    let task = current_task().unwrap();
+    if uoss != 0 {
+        let old_ss_stack = task.inner().ss_stack;
+        // println_color!(32, "get old sigaltstack: {:x?}", old_ss_stack);
+        task.write_val_to_user(VirtAddr::from(uoss), &old_ss_stack)?;
+    }
+    if uss != 0 {
+        let ss_stack = task.read_val_from_user::<SignalStack>(VirtAddr::from(uss))?;
+        // println_color!(32, "set sigaltstack: {:x?}", ss_stack);
+        task.inner().ss_stack = ss_stack;
+    }
     Ok(0)
 }

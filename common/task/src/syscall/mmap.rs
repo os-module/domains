@@ -4,6 +4,7 @@ use core::ops::Range;
 use basic::{
     config::FRAME_SIZE,
     constants::io::{MMapFlags, MMapType, ProtFlags, MMAP_TYPE_MASK},
+    println_color,
     vm::frame::FrameTracker,
     AlienError, AlienResult,
 };
@@ -155,6 +156,7 @@ pub fn do_mmap(
         let frame = FrameTracker::new(1);
         phy_frames.push(Box::new(FrameTrackerWrapper(frame)) as Box<dyn PhysPage>);
     }
+    // println_color!(32,"v_range:{:x?}, map_flags:{:?}",v_range, map_flags);
     let area = VmArea::new(v_range, map_flags, phy_frames);
 
     task.address_space
@@ -180,6 +182,36 @@ pub fn do_munmap(start: usize, len: usize) -> AlienResult<isize> {
     task.address_space.lock().unmap(start).unwrap();
     mmap.remove_region(start);
     Ok(0)
+}
+
+pub fn do_mprotect(addr: usize, len: usize, prot: u32) -> AlienResult<isize> {
+    let prot = ProtFlags::from_bits_truncate(prot as _);
+    let task = current_task().unwrap();
+    let mut mmap = task.mmap.lock();
+    let region = mmap.get_region_mut(addr).ok_or(AlienError::EINVAL)?;
+    let map_flags = from_prot(prot); // no V  flag
+                                     // basic::println_color!(32, "mprotect: region:{:#x?}", region);
+                                     // basic::println_color!(32, "mprotect: addr:{:#x}, len:{:#x}, prot:{:?}, map_flag:{:?}", addr, len, prot,map_flags);
+    region.set_prot(prot);
+    let addr_start = align_down_4k(addr);
+    let addr_end = align_up_4k(addr + len);
+    for addr in (addr_start..addr_end).step_by(FRAME_SIZE) {
+        task.address_space
+            .lock()
+            .protect(addr..addr + FRAME_SIZE, map_flags)
+            .unwrap()
+    }
+    Ok(0)
+}
+
+pub fn do_load_page_fault(addr: usize) -> AlienResult<()> {
+    let task = current_task().unwrap();
+    let mut mmap = task.mmap.lock();
+    let region = mmap.get_region_mut(addr).ok_or(AlienError::EINVAL)?;
+    println_color!(31, "load page fault: region:{:#x?}", region);
+    let res = task.address_space.lock().query(addr).unwrap();
+    println_color!(31, "load page fault: res:{:#x?}", res);
+    Ok(())
 }
 
 fn from_prot(prot_flags: ProtFlags) -> MappingFlags {

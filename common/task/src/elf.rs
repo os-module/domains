@@ -79,6 +79,14 @@ impl PhysPage for FrameTrackerWrapper {
     fn as_mut_bytes(&mut self) -> &mut [u8] {
         self.0.as_mut_slice_with(0)
     }
+
+    fn read_value_atomic(&self, offset: usize) -> usize {
+        self.0.read_value_atomic(offset)
+    }
+
+    fn write_value_atomic(&mut self, offset: usize, value: usize) {
+        self.0.write_value_atomic(offset, value)
+    }
 }
 
 #[derive(Debug)]
@@ -501,4 +509,12 @@ pub fn extend_thread_vm_space(space: &mut VmSpace<VmmPageAllocator>, thread_num:
         vec![Box::new(FrameTrackerWrapper(trap_context_frame))],
     );
     space.map(VmAreaType::VmArea(trap_context_area)).unwrap();
+    // copy trampoline
+    let mut old_trampoline_buf = [0; FRAME_SIZE];
+    space
+        .read_bytes(VirtAddr::from(TRAP_CONTEXT_BASE), &mut old_trampoline_buf)
+        .unwrap();
+    space
+        .write_bytes(VirtAddr::from(address), &old_trampoline_buf)
+        .unwrap();
 }

@@ -1,4 +1,4 @@
-use alloc::sync::Arc;
+use alloc::{sync::Arc, vec};
 
 use basic::AlienResult;
 use interface::TaskDomain;
@@ -47,4 +47,19 @@ fn system_info() -> Utsname {
     name.machine[..MACHINE.len()].copy_from_slice(MACHINE.as_bytes());
     name.domainname[..DOMAINNAME.len()].copy_from_slice(DOMAINNAME.as_bytes());
     name
+}
+
+pub fn sys_random(
+    task_domain: &Arc<dyn TaskDomain>,
+    buf: usize,
+    len: usize,
+    _flags: usize,
+) -> AlienResult<isize> {
+    let mut random_buf = vec![0; len];
+    for v in random_buf.iter_mut() {
+        let time_ms = basic::time::read_time_ms();
+        *v = (time_ms & 0xff) as u8;
+    }
+    task_domain.copy_to_user(buf, &random_buf)?;
+    Ok(len as isize)
 }

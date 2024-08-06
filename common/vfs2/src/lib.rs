@@ -11,6 +11,7 @@ use core::sync::atomic::{AtomicBool, AtomicU64};
 
 use basic::{
     constants::{
+        epoll::{EpollCtlOp, EpollEvent},
         io::{Fcntl64Cmd, OpenFlags, PollEvents, SeekFrom},
         time::TimeSpec,
     },
@@ -30,12 +31,15 @@ use vfscore::{
 };
 
 use crate::{
+    epoll::EpollFile,
     kfile::{File, KernelFile},
     socket::SocketFile,
     tree::system_root_fs,
 };
 
 mod devfs;
+mod epoll;
+mod eventfd;
 mod initrd;
 mod kfile;
 mod pipe;
@@ -46,6 +50,7 @@ mod shim;
 mod socket;
 mod sys;
 mod tree;
+
 static NET_STACK_DOMAIN: Once<Arc<dyn NetDomain>> = Once::new();
 static VFS_MAP: RwLock<BTreeMap<InodeID, Arc<dyn File>>> = RwLock::new(BTreeMap::new());
 
@@ -319,6 +324,29 @@ impl VfsDomain for VfsDomainImpl {
         let file = get_file(inode).unwrap();
         let socket_file = file.downcast_arc::<SocketFile>().unwrap();
         Ok(socket_file.socket_id())
+    }
+    fn do_poll_create(&self, flags: usize) -> AlienResult<InodeID> {
+        let flags = OpenFlags::from_bits_truncate(flags);
+        let epoll_file = Arc::new(EpollFile::new(flags));
+        let id = insert_special_file(epoll_file);
+        Ok(id)
+    }
+    fn do_poll_ctl(
+        &self,
+        inode: InodeID,
+        op: u32,
+        fd: usize,
+        event: RRef<EpollEvent>,
+    ) -> AlienResult<()> {
+        let file = get_file(inode).unwrap();
+        let op = EpollCtlOp::try_from(op).unwrap();
+        let epoll_file = file.downcast_arc::<EpollFile>().unwrap();
+        epoll_file.ctl(op, fd, *event)
+    }
+    fn do_eventfd(&self, init_val: u32, flags: u32) -> AlienResult<InodeID> {
+        let eventfd_file = eventfd::eventfd(init_val, flags).unwrap();
+        let id = insert_special_file(eventfd_file);
+        Ok(id)
     }
 }
 

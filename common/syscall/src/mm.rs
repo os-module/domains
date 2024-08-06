@@ -58,3 +58,17 @@ pub fn sys_mmap(
 pub fn sys_unmap(task_domain: &Arc<dyn TaskDomain>, addr: usize, len: usize) -> AlienResult<isize> {
     task_domain.do_munmap(addr, len)
 }
+
+pub fn sys_mprotect(
+    task_domain: &Arc<dyn TaskDomain>,
+    addr: usize,
+    len: usize,
+    prot: usize,
+) -> AlienResult<isize> {
+    let prot = ProtFlags::from_bits_truncate(prot as _);
+    info!(
+        "mprotect: addr: {:#x}, len: {:#x}, prot: {:?}",
+        addr, len, prot
+    );
+    task_domain.do_mprotect(addr, len, prot.bits())
+}

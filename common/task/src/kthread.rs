@@ -1,7 +1,7 @@
 use alloc::{collections::BTreeMap, string::ToString, sync::Arc};
 
 use basic::{
-    constants::signal::{SignalHandlers, SignalReceivers},
+    constants::signal::{SignalHandlers, SignalReceivers, SignalStack},
     println,
     sync::Mutex,
     task::{TaskContext, TaskContextExt},
@@ -60,6 +60,11 @@ pub fn ktread_create(func: fn(), name: &str) -> AlienResult<()> {
             // user mode stack info
             stack: 0..0,
             resource_limits: Mutex::new(ResourceLimits::default()),
+            ss_stack: SignalStack {
+                ss_sp: 0,
+                ss_flags: 0x2,
+                ss_size: 0,
+            },
         }),
         send_sigchld_when_exit: false,
         mmap: Arc::new(Mutex::new(MMapInfo::new())),

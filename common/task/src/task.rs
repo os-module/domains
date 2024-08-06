@@ -12,7 +12,7 @@ use basic::{
     arch::hart_id,
     config::*,
     constants::{
-        signal::{SignalHandlers, SignalNumber, SignalReceivers},
+        signal::{SignalHandlers, SignalNumber, SignalReceivers, SignalStack},
         task::CloneFlags,
     },
     sync::{Mutex, MutexGuard},
@@ -91,6 +91,11 @@ pub struct TaskInner {
     pub stack: Range<usize>,
     /// resource limits
     pub resource_limits: Mutex<ResourceLimits>,
+    /// 用于异常处理的栈信息
+    ///
+    /// - SS_ONSTACK = 1
+    /// - SS_DISABLE = 2
+    pub ss_stack: SignalStack,
 }
 
 #[derive(Debug, Clone)]
@@ -295,6 +300,11 @@ impl Task {
                 clear_child_tid: 0,
                 stack: stack_info,
                 resource_limits: Mutex::new(ResourceLimits::default()),
+                ss_stack: SignalStack {
+                    ss_sp: 0,
+                    ss_flags: 0x2,
+                    ss_size: 0,
+                },
             }),
             send_sigchld_when_exit: false,
         };
@@ -357,6 +367,8 @@ impl Task {
             inner.stack.clone(),
         );
 
+        let mmap = self.mmap.clone();
+
         drop(inner);
 
         let fd_table = if clone_args.flags.contains(CloneFlags::CLONE_FILES) {
@@ -393,7 +405,7 @@ impl Task {
             pid,
             threads,
             address_space,
-            mmap: Arc::new(Mutex::new(MMapInfo::new())),
+            mmap,
             signal_handlers: Arc::new(Mutex::new(SignalHandlers::new())),
             signal_receivers: Arc::new(Mutex::new(SignalReceivers::new())),
             fd_table,
@@ -413,6 +425,11 @@ impl Task {
                 },
                 stack,
                 resource_limits: Mutex::new(ResourceLimits::default()),
+                ss_stack: SignalStack {
+                    ss_sp: 0,
+                    ss_flags: 0x2,
+                    ss_size: 0,
+                },
             }),
             send_sigchld_when_exit: clone_args.sig == SignalNumber::SIGCHLD,
         };
@@ -437,12 +454,12 @@ impl Task {
             trap_context.update_tp(VirtAddr::from(clone_args.tls));
         }
 
+        trace!("write tid to parent arg: {:#x?}", clone_args.ptid);
         // 检查是否在父任务地址中写入 tid
         if clone_args.flags.contains(CloneFlags::CLONE_PARENT_SETTID) {
             task.write_val_to_user(VirtAddr::from(clone_args.ptid), &(tid.raw() as i32))
                 .unwrap();
         }
-
         if clone_args.flags.contains(CloneFlags::CLONE_CHILD_SETTID) {
             task.write_val_to_user(VirtAddr::from(clone_args.ctid), &(tid.raw() as i32))
                 .unwrap();

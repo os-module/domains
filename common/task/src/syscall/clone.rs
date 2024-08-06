@@ -1,6 +1,6 @@
 use basic::{
     constants::{signal::SignalNumber, task::CloneFlags},
-    AlienError, AlienResult,
+    *,
 };
 
 use crate::{
@@ -14,6 +14,14 @@ pub fn do_clone(
     tls: usize,
     ctid: usize,
 ) -> AlienResult<isize> {
+    trace!(
+        "clone: flags: {:#x}, stack: {:#x}, ptid: {:#x}, tls: {:#x}, ctid: {:#x}",
+        flags,
+        stack,
+        ptid,
+        tls,
+        ctid
+    );
     let clone_flag = CloneFlags::from_bits_truncate(flags as u32);
     // check whether flag include signal
     let sig = flags & 0xff;
@@ -32,6 +40,7 @@ pub fn do_clone(
     let trap_frame = new_task.trap_frame();
     trap_frame.update_result(0);
     let tid = new_task.tid.raw();
+    // println_color!(33, "clone: new task tid: {}", tid);
     add_task(new_task);
     Ok(tid as isize)
 }
