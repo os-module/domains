@@ -19,7 +19,9 @@ use alloc::{boxed::Box, sync::Arc};
 use core::ops::Range;
 
 use basic::{println, AlienError, AlienResult};
-use interface::{Basic, DomainType, InodeID, TaskDomain, TmpHeapInfo};
+use interface::{
+    define_unwind_for_TaskDomain, Basic, DomainType, InodeID, TaskDomain, TmpHeapInfo,
+};
 use memory_addr::VirtAddr;
 use rref::{RRef, RRefVec};
 
@@ -273,7 +275,7 @@ impl TaskDomain for TaskDomainImpl {
         syscall::futex::futex(uaddr, futex_op, val, timeout, uaddr2, val3)
     }
 }
-
+define_unwind_for_TaskDomain!(TaskDomainImpl);
 pub fn main() -> Box<dyn TaskDomain> {
-    Box::new(TaskDomainImpl::new())
+    Box::new(UnwindWrap::new(TaskDomainImpl::new()))
 }

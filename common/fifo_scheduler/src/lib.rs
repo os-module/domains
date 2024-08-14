@@ -7,13 +7,13 @@ extern crate alloc;
 
 use alloc::boxed::Box;
 
-use common_scheduler::CommonSchedulerDomain;
+use common_scheduler::{CommonSchedulerDomain, UnwindWrap};
 use interface::SchedulerDomain;
 
 use crate::scheduler::CustomFiFoScheduler;
 
 pub fn main() -> Box<dyn SchedulerDomain> {
-    Box::new(CommonSchedulerDomain::new(Box::new(
+    Box::new(UnwindWrap::new(CommonSchedulerDomain::new(Box::new(
         CustomFiFoScheduler::new(),
-    )))
+    ))))
 }

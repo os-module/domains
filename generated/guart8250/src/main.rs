@@ -1,19 +1,20 @@
 #![feature(panic_info_message)]
 #![no_std]
 #![no_main]
-
+#![feature(lang_items)]
+#![allow(internal_features)]
 extern crate alloc;
 extern crate malloc;
 use alloc::boxed::Box;
 use core::panic::PanicInfo;
 
-use basic::println;
+use basic::domain_main;
 use corelib::CoreFunction;
 use interface::UartDomain;
 use rref::{domain_id, SharedHeapAlloc};
 use storage::StorageArg;
 
-#[no_mangle]
+#[domain_main]
 fn main(
     sys: &'static dyn CoreFunction,
     domain_id: u64,
@@ -33,21 +34,4 @@ fn main(
     interface::activate_domain();
     // call the real blk driver
     uart8250::main()
-}
-
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    if let Some(p) = info.location() {
-        println!(
-            "line {}, file {}: {}",
-            p.line(),
-            p.file(),
-            info.message().unwrap()
-        );
-    } else {
-        println!("no location information available");
-    }
-    interface::deactivate_domain();
-    basic::backtrace(domain_id());
-    loop {}
 }

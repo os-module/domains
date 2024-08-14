@@ -8,7 +8,7 @@ use core::fmt::Debug;
 
 use basic::sync::Mutex;
 use fat_vfs::{FatFs, FatFsProvider};
-use generic::GenericFsDomain;
+use generic::{GenericFsDomain, UnwindWrap};
 use interface::FsDomain;
 use vfscore::utils::VfsTimeSpec;
 
@@ -24,5 +24,10 @@ type FatFsDomain = GenericFsDomain;
 
 pub fn main() -> Box<dyn FsDomain> {
     let fatfs = Arc::new(FatFs::<_, Mutex<()>>::new(ProviderImpl));
-    Box::new(FatFsDomain::new(fatfs, "fatfs".to_string(), None, None))
+    Box::new(UnwindWrap::new(FatFsDomain::new(
+        fatfs,
+        "fatfs".to_string(),
+        None,
+        None,
+    )))
 }

@@ -6,7 +6,7 @@ use alloc::{boxed::Box, format, string::String};
 use core::ops::Range;
 
 use basic::{constants::io::RtcTime, io::SafeIORegion, println, AlienResult};
-use interface::{Basic, DeviceBase, RtcDomain};
+use interface::{define_unwind_for_RtcDomain, Basic, DeviceBase, RtcDomain};
 use rref::RRef;
 use rtc::{goldfish::GoldFishRtc, LowRtcDevice, RtcIORegion};
 use spin::Once;
@@ -83,7 +83,8 @@ impl RtcDomain for Rtc {
         Ok(time)
     }
 }
+define_unwind_for_RtcDomain!(Rtc);
 
 pub fn main() -> Box<dyn RtcDomain> {
-    Box::new(Rtc)
+    Box::new(UnwindWrap::new(Rtc))
 }

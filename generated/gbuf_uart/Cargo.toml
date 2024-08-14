@@ -13,3 +13,9 @@ interface = { path = "../../../domain-lib/interface",  features = ["domain"]  }
 malloc = { path = "../../../domain-lib/malloc" }
 buf_uart = { path = "../../drivers/buf_uart" }
 storage = { path = "../../../domain-lib/storage", features = ["impl"] }
+
+unwind = { path = "../../../base/unwind", optional = true }
+
+[features]
+default = ["rust-unwind"]
+rust-unwind = ["dep:unwind"]

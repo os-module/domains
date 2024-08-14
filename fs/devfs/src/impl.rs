@@ -3,7 +3,7 @@ use core::fmt::Debug;
 
 use basic::AlienResult;
 use generic::GenericFsDomain;
-use interface::{Basic, DevFsDomain, DirEntryWrapper, DomainType, FsDomain, InodeID, MountInfo};
+use interface::*;
 use rref::{RRef, RRefVec};
 use vfscore::{fstype::FileSystemFlags, inode::InodeAttr, superblock::SuperType, utils::*};
 
@@ -248,3 +248,11 @@ impl DevFsDomain for DevFsDomainImpl {
         Ok(())
     }
 }
+impl Basic for UnwindWrap {
+    fn domain_id(&self) -> u64 {
+        self.0.domain_id()
+    }
+}
+
+define_unwind_for_DevFsDomain!(DevFsDomainImpl);
+impl_unwind_for_FsDomain!(UnwindWrap);

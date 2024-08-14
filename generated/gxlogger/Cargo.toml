@@ -12,5 +12,9 @@ basic = { path = "../../../domain-lib/basic",  default-features = false  }
 rref = { path = "../../../domain-lib/rref"  }
 interface = { path = "../../../domain-lib/interface",  features = ["domain"]  }
 storage = { path = "../../../domain-lib/storage", features = ["impl"] }
-
 xlogger = { path = "../../common/xlogger" }
+unwind = { path = "../../../base/unwind", optional = true }
+
+[features]
+default = ["rust-unwind"]
+rust-unwind = ["dep:unwind"]

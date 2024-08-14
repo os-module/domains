@@ -13,3 +13,9 @@ rref = { path = "../../../domain-lib/rref"  }
 interface = { path = "../../../domain-lib/interface", features = ["domain"] }
 storage = { path = "../../../domain-lib/storage", features = ["impl"] }
 uart8250 = { path = "../../drivers/uart8250" }
+
+unwind = { path = "../../../base/unwind", optional = true }
+
+[features]
+default = ["rust-unwind"]
+rust-unwind = ["dep:unwind"]

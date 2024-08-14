@@ -16,7 +16,7 @@ use core::{
 };
 
 use basic::{arch, config::CPU_NUM, io::SafeIORegion, println, sync::Mutex, AlienResult};
-use interface::{Basic, DeviceBase, PLICDomain, PlicInfo, PlicType};
+use interface::{define_unwind_for_PLICDomain, Basic, DeviceBase, PLICDomain, PlicInfo, PlicType};
 use raw_plic::{Mode, PlicIO, PLIC};
 use rref::RRefVec;
 use spin::Once;
@@ -158,7 +158,9 @@ impl PLICDomain for PLICDomainImpl {
     }
 }
 
+define_unwind_for_PLICDomain!(PLICDomainImpl);
+
 pub fn main() -> Box<dyn PLICDomain> {
     let domain_impl = PLICDomainImpl::new();
-    Box::new(domain_impl)
+    Box::new(UnwindWrap::new(domain_impl))
 }

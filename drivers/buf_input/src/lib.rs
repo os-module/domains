@@ -4,7 +4,10 @@ extern crate alloc;
 use alloc::{boxed::Box, collections::VecDeque, sync::Arc};
 
 use basic::{config::MAX_INPUT_EVENT_NUM, println, sync::Mutex, AlienError, AlienResult};
-use interface::{Basic, BufInputDomain, DeviceBase, DomainType, InputDomain};
+use interface::{
+    define_unwind_for_BufInputDomain, define_unwind_for_EmptyDeviceDomain, Basic, BufInputDomain,
+    DeviceBase, DomainType, InputDomain,
+};
 use spin::Once;
 
 static INPUT_DOMAIN: Once<Arc<dyn InputDomain>> = Once::new();
@@ -107,6 +110,8 @@ impl BufInputDomain for BufInput {
     }
 }
 
+define_unwind_for_BufInputDomain!(BufInput);
+
 pub fn main() -> Box<dyn BufInputDomain> {
-    Box::new(BufInput::new(MAX_INPUT_EVENT_NUM))
+    Box::new(UnwindWrap::new(BufInput::new(MAX_INPUT_EVENT_NUM)))
 }

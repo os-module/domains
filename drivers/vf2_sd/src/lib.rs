@@ -10,7 +10,7 @@ use alloc::boxed::Box;
 use core::ops::Range;
 
 use basic::{io::SafeIORegion, println, println_color, sync::Mutex, AlienResult};
-use interface::{Basic, BlkDeviceDomain, DeviceBase};
+use interface::{define_unwind_for_BlkDeviceDomain, Basic, BlkDeviceDomain, DeviceBase};
 use rref::RRef;
 use spin::Lazy;
 use visionfive2_sd::Vf2SdDriver;
@@ -79,6 +79,8 @@ impl BlkDeviceDomain for Vf2SDCardDomain {
     }
 }
 
+define_unwind_for_BlkDeviceDomain!(Vf2SDCardDomain);
+
 pub fn main() -> Box<dyn BlkDeviceDomain> {
-    Box::new(Vf2SDCardDomain)
+    Box::new(UnwindWrap::new(Vf2SDCardDomain))
 }

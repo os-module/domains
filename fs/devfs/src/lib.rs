@@ -22,14 +22,19 @@ use core::fmt::Debug;
 use basic::sync::Mutex;
 use devfs::{DevFs, DevKernelProvider};
 use generic::GenericFsDomain;
-use interface::{DevFsDomain, DomainType, TaskDomain};
+use interface::*;
 use log::info;
 use spin::{Lazy, Once};
 use vfscore::{inode::VfsInode, utils::VfsTimeSpec};
 
 use crate::{
-    block::BLKDevice, empty_device::EmptyDevice, gpu::GPUDevice, input::INPUTDevice,
-    r#impl::DevFsDomainImpl, rtc::RTCDevice, uart::UARTDevice,
+    block::BLKDevice,
+    empty_device::EmptyDevice,
+    gpu::GPUDevice,
+    input::INPUTDevice,
+    r#impl::{DevFsDomainImpl, UnwindWrap},
+    rtc::RTCDevice,
+    uart::UARTDevice,
 };
 
 #[derive(Clone, Debug)]
@@ -99,5 +104,5 @@ static TASK_DOMAIN: Once<Arc<dyn TaskDomain>> = Once::new();
 pub fn main() -> Box<dyn DevFsDomain> {
     let devfs = Arc::new(DevFs::<_, Mutex<()>>::new(ProviderImpl));
     let devfs = GenericFsDomain::new(devfs, "devfs".to_string(), None, None);
-    Box::new(DevFsDomainImpl::new(devfs))
+    Box::new(UnwindWrap::new(DevFsDomainImpl::new(devfs)))
 }

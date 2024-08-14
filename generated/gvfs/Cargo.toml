@@ -14,3 +14,9 @@ malloc = { path = "../../../domain-lib/malloc" }
 storage = { path = "../../../domain-lib/storage", features = ["impl"] }
 
 vfs = { path = "../../common/vfs" }
+
+unwind = { path = "../../../base/unwind", optional = true }
+
+[features]
+default = ["rust-unwind"]
+rust-unwind = ["dep:unwind"]

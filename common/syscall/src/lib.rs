@@ -408,6 +408,7 @@ impl SysCallDomain for SysCallDomainImpl {
         }
     }
 }
+define_unwind_for_SysCallDomain!(SysCallDomainImpl);
 
 pub fn main() -> Box<dyn SysCallDomain> {
     let vfs_domain = basic::get_domain("vfs").unwrap();
@@ -455,12 +456,12 @@ pub fn main() -> Box<dyn SysCallDomain> {
         }
     }
     println!("syscall get {} input domain", count - 1);
-    Box::new(SysCallDomainImpl::new(
+    Box::new(UnwindWrap::new(SysCallDomainImpl::new(
         vfs_domain,
         task_domain,
         logger,
         net_stack_domain,
         gpu_domain,
         input_domains,
-    ))
+    )))
 }

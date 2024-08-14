@@ -9,7 +9,7 @@ use alloc::boxed::Box;
 use core::ops::Range;
 
 use basic::{io::SafeIORegion, println, sync::Mutex, AlienResult};
-use interface::{Basic, BlkDeviceDomain, DeviceBase};
+use interface::{define_unwind_for_BlkDeviceDomain, Basic, BlkDeviceDomain, DeviceBase};
 use rref::RRef;
 use spin::Once;
 use virtio_drivers::{device::block::VirtIOBlk, transport::mmio::MmioTransport};
@@ -72,6 +72,8 @@ impl BlkDeviceDomain for BlkDomain {
     }
 }
 
+define_unwind_for_BlkDeviceDomain!(BlkDomain);
+
 pub fn main() -> Box<dyn BlkDeviceDomain> {
-    Box::new(BlkDomain)
+    Box::new(UnwindWrap::new(BlkDomain))
 }

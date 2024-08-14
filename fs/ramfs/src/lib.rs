@@ -7,7 +7,7 @@ use alloc::{boxed::Box, string::ToString, sync::Arc};
 use core::fmt::Debug;
 
 use basic::sync::Mutex;
-use generic::GenericFsDomain;
+use generic::{GenericFsDomain, UnwindWrap};
 use interface::FsDomain;
 use ramfs::{RamFs, RamFsProvider};
 use vfscore::utils::VfsTimeSpec;
@@ -24,5 +24,10 @@ type RamFsDomain = GenericFsDomain;
 
 pub fn main() -> Box<dyn FsDomain> {
     let fatfs = Arc::new(RamFs::<_, Mutex<()>>::new(ProviderImpl));
-    Box::new(RamFsDomain::new(fatfs, "ramfs".to_string(), None, None))
+    Box::new(UnwindWrap::new(RamFsDomain::new(
+        fatfs,
+        "ramfs".to_string(),
+        None,
+        None,
+    )))
 }

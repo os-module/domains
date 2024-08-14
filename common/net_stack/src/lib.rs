@@ -28,7 +28,8 @@ use basic::{
 };
 use downcast_rs::{impl_downcast, DowncastSync};
 use interface::{
-    Basic, DeviceBase, DomainType, NetDeviceDomain, NetDomain, SocketArgTuple, SocketID,
+    define_unwind_for_NetDomain, Basic, DeviceBase, DomainType, NetDeviceDomain, NetDomain,
+    SocketArgTuple, SocketID,
 };
 use log::{debug, info};
 use lose_net_stack::{connection::NetServer, MacAddress};
@@ -383,6 +384,8 @@ fn remove_socket_file(socket_id: SocketID) {
     SOCKET_MAP.lock().remove(&socket_id);
 }
 
+define_unwind_for_NetDomain!(NetStack);
+
 pub fn main() -> Box<dyn NetDomain> {
-    Box::new(NetStack::new())
+    Box::new(UnwindWrap::new(NetStack::new()))
 }

@@ -6,7 +6,7 @@ use alloc::boxed::Box;
 use core::{fmt::Debug, ops::Range};
 
 use basic::{io::SafeIORegion, println, sync::Mutex, AlienError, AlienResult};
-use interface::{Basic, DeviceBase, GpuDomain};
+use interface::{define_unwind_for_GpuDomain, Basic, DeviceBase, GpuDomain};
 use rref::RRefVec;
 use spin::Once;
 use virtio_drivers::{device::gpu::VirtIOGpu, transport::mmio::MmioTransport};
@@ -81,7 +81,7 @@ impl GpuDomain for GPUDomain {
         self.buffer_range.get().ok_or(AlienError::EINVAL).cloned()
     }
 }
-
+define_unwind_for_GpuDomain!(GPUDomain);
 pub fn main() -> Box<dyn GpuDomain> {
-    Box::new(GPUDomain::new())
+    Box::new(UnwindWrap::new(GPUDomain::new()))
 }

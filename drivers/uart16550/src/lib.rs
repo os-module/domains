@@ -6,7 +6,7 @@ use alloc::boxed::Box;
 use core::{fmt::Debug, ops::Range};
 
 use basic::{io::SafeIORegion, println, AlienResult};
-use interface::{Basic, DeviceBase, UartDomain};
+use interface::{define_unwind_for_UartDomain, Basic, DeviceBase, UartDomain};
 use raw_uart16550::{InterruptTypes, Uart16550, Uart16550IO};
 use rref::RRefVec;
 use spin::Once;
@@ -105,6 +105,7 @@ impl UartDomain for UartDomainImpl {
     }
 }
 
+define_unwind_for_UartDomain!(UartDomainImpl);
 pub fn main() -> Box<dyn UartDomain> {
-    Box::new(UartDomainImpl)
+    Box::new(UnwindWrap::new(UartDomainImpl))
 }

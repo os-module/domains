@@ -5,7 +5,7 @@ use alloc::{boxed::Box, collections::VecDeque};
 use core::{fmt::Debug, ops::Range};
 
 use basic::{sync::Mutex, AlienResult};
-use interface::{Basic, DeviceBase, NetDeviceDomain};
+use interface::{define_unwind_for_NetDeviceDomain, Basic, DeviceBase, NetDeviceDomain};
 use rref::RRefVec;
 
 #[derive(Debug)]
@@ -82,7 +82,8 @@ impl NetDeviceDomain for LoopBackNetDevice {
         }
     }
 }
+define_unwind_for_NetDeviceDomain!(LoopBackNetDevice);
 
 pub fn main() -> Box<dyn NetDeviceDomain> {
-    Box::new(LoopBackNetDevice::new())
+    Box::new(UnwindWrap::new(LoopBackNetDevice::new()))
 }

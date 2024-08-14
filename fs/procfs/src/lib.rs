@@ -5,7 +5,7 @@ use alloc::{boxed::Box, string::ToString, sync::Arc};
 
 use basic::sync::Mutex;
 use dynfs::{DynFsDirInode, DynFsKernelProvider};
-use generic::GenericFsDomain;
+use generic::{GenericFsDomain, UnwindWrap};
 use interface::FsDomain;
 use vfscore::{dentry::VfsDentry, error::VfsError, utils::VfsTimeSpec};
 
@@ -31,12 +31,12 @@ impl DynFsKernelProvider for CommonFsProviderImpl {
 
 pub fn main() -> Box<dyn FsDomain> {
     let procfs = Arc::new(ProcFs::new(CommonFsProviderImpl, "procfs"));
-    Box::new(ProcFsDomain::new(
+    Box::new(UnwindWrap::new(ProcFsDomain::new(
         procfs,
         "procfs".to_string(),
         Some(mount_func),
         None,
-    ))
+    )))
 }
 
 type ProcFsDirInodeImpl = DynFsDirInode<CommonFsProviderImpl, Mutex<()>>;

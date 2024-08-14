@@ -6,7 +6,9 @@ use alloc::{boxed::Box, collections::VecDeque, sync::Arc};
 use core::fmt::Debug;
 
 use basic::{println, sync::Mutex, AlienError, AlienResult};
-use interface::{Basic, BufUartDomain, DeviceBase, DomainType, UartDomain};
+use interface::{
+    define_unwind_for_BufUartDomain, Basic, BufUartDomain, DeviceBase, DomainType, UartDomain,
+};
 use rref::RRefVec;
 use spin::Once;
 
@@ -114,7 +116,9 @@ impl BufUartDomain for Uart {
     }
 }
 
+define_unwind_for_BufUartDomain!(Uart);
+
 pub fn main() -> Box<dyn BufUartDomain> {
     let uart = Uart::new();
-    Box::new(uart)
+    Box::new(UnwindWrap::new(uart))
 }

@@ -51,10 +51,10 @@ fn __readdir_from_domain_list(start_index: usize) -> VfsResult<Option<VfsDirEntr
         let entry = domains
             .iter()
             .nth(start_index)
-            .map(|(name, _)| VfsDirEntry {
+            .map(|(_id, info)| VfsDirEntry {
                 ino: 0,
                 ty: VfsNodeType::File,
-                name: name.to_string(),
+                name: info.name.to_string(),
             });
         Ok(entry)
     } else {
@@ -122,7 +122,10 @@ impl VfsInode for DomainFileInfoDir {
         if let Some(domain_info) = domain_info {
             let guard = domain_info.lock();
             let domain_list = &guard.domain_list;
-            let _ = domain_list.get(name).ok_or(VfsError::NoEntry)?;
+            let _ = domain_list
+                .iter()
+                .find(|(_id, info)| info.name == name)
+                .ok_or(VfsError::NoEntry)?;
             return Ok(Arc::new(DomainInfoFile::new(DomainInfoFileType::Domain(
                 name.to_string(),
             ))));
@@ -202,7 +205,11 @@ fn domain_data(name: &str) -> String {
     let domain_info = DOMAIN_INFO.get().unwrap();
     let guard = domain_info.lock();
     let domain_list = &guard.domain_list;
-    let info = domain_list.get(name).unwrap();
+    let info = domain_list
+        .iter()
+        .find(|(_id, info)| info.name == name)
+        .unwrap()
+        .1;
     let data = format!("DomainName: {}\nInformation: {:#?}", name, info);
     data
 }

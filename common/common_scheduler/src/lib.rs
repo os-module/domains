@@ -8,7 +8,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use basic::{println, AlienResult};
-use interface::{Basic, SchedulerDomain};
+use interface::{define_unwind_for_SchedulerDomain, Basic, SchedulerDomain};
 use rref::RRef;
 pub use scheduler::Scheduler;
 use task_meta::TaskSchedulingInfo;
@@ -47,3 +47,5 @@ impl SchedulerDomain for CommonSchedulerDomain {
         Ok(scheduler::fetch_task(info))
     }
 }
+
+define_unwind_for_SchedulerDomain!(CommonSchedulerDomain);

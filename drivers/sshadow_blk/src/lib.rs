@@ -9,8 +9,8 @@ use alloc::{
 };
 use core::sync::atomic::AtomicBool;
 
-use basic::{println, AlienError, AlienResult};
-use interface::{Basic, BlkDeviceDomain, DeviceBase, DomainType, ShadowBlockDomain};
+use basic::{println, println_color, AlienError, AlienResult};
+use interface::*;
 use log::error;
 use rref::RRef;
 use spin::Once;
@@ -62,7 +62,7 @@ impl ShadowBlockDomain for ShadowBlockDomainImpl {
     fn read_block(&self, block: u32, data: RRef<[u8; 512]>) -> AlienResult<RRef<[u8; 512]>> {
         static FLAG: AtomicBool = AtomicBool::new(false);
         if !FLAG.load(core::sync::atomic::Ordering::Relaxed) {
-            println!("<SShadowBlockDomainImpl Mask> read block: {}", block);
+            println_color!(34, "<SShadowBlockDomainImpl Mask> read block: {}", block);
             FLAG.store(true, core::sync::atomic::Ordering::Relaxed);
         }
         let blk = BLOCK.get().unwrap();
@@ -72,17 +72,11 @@ impl ShadowBlockDomain for ShadowBlockDomainImpl {
             Ok(res) => Ok(res),
             Err(AlienError::DOMAINCRASH) => {
                 error!("domain crash, try restart domain");
-                // try restart domain once
-                let blk_domain_name = self.blk_domain_name.get().unwrap().as_str();
-                let res = basic::reload_domain(blk_domain_name);
-                if res.is_err() {
-                    error!("reload domain failed");
-                    Err(AlienError::DOMAINCRASH)
-                } else {
-                    error!("restart domain ok");
-                    data = RRef::new([0u8; 512]);
-                    blk.read_block(block, data)
-                }
+                // try reread block
+                basic::checkout_shared_data().unwrap();
+                println_color!(31, "try reread block");
+                data = RRef::new([0u8; 512]);
+                blk.read_block(block, data)
             }
             Err(e) => Err(e),
         }
@@ -100,7 +94,8 @@ impl ShadowBlockDomain for ShadowBlockDomainImpl {
         BLOCK.get().unwrap().flush()
     }
 }
+define_unwind_for_ShadowBlockDomain!(ShadowBlockDomainImpl);
 
 pub fn main() -> Box<dyn ShadowBlockDomain> {
-    Box::new(ShadowBlockDomainImpl::new())
+    Box::new(UnwindWrap::new(ShadowBlockDomainImpl::new()))
 }

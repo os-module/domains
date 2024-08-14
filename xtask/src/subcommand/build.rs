@@ -60,10 +60,7 @@ pub fn build_domain(name: &str, log: &str, dir: &str) {
         .expect("failed to execute cargo build");
     println!("Build domain [{}] project success", name);
     std::process::Command::new("cp")
-        .arg(format!(
-            "./target/riscv64gc-unknown-none-elf/release/{}",
-            name
-        ))
+        .arg(format!("./target/riscv64/release/{}", name))
         .arg(format!("./build/{}/{}", dir, name))
         .status()
         .expect("failed to execute cp");

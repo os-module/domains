@@ -1,6 +1,6 @@
 [build]
-target = "riscv64gc-unknown-none-elf"
-
+#target = "riscv64gc-unknown-none-elf"
+target = "./riscv64.json"
 [target.riscv64gc-unknown-none-elf]
 rustflags = [
     # build/domain.ld
@@ -15,8 +15,20 @@ rustflags = [
 linker = "riscv64-linux-gnu-gcc"
 
 
+[target.riscv64]
+rustflags = [
+    "-Clink-arg=-T./domain.ld",
+    "-Clink-arg=-pie",
+    "-A", "unused_imports"
+]
+linker = "riscv64-linux-gnu-gcc"
+
+[unstable]
+build-std = ["core", "alloc"]
+build-std-features = ["compiler-builtins-mem"]
+
 [profile.release]
-panic = "abort"
+#panic = "abort"
 lto = true
 strip = true
 opt-level = "z"  # Optimize for size.

@@ -19,7 +19,9 @@ use basic::{
     time::TimeNow,
     *,
 };
-use interface::{Basic, DomainType, InodeID, NetDomain, SocketID, VfsDomain};
+use interface::{
+    define_unwind_for_VfsDomain, Basic, DomainType, InodeID, NetDomain, SocketID, VfsDomain,
+};
 use log::debug;
 use rref::{RRef, RRefVec};
 use spin::{Lazy, Once};
@@ -350,6 +352,7 @@ impl VfsDomain for VfsDomainImpl {
     }
 }
 
+define_unwind_for_VfsDomain!(VfsDomainImpl);
 pub fn main() -> Box<dyn VfsDomain> {
-    Box::new(VfsDomainImpl)
+    Box::new(UnwindWrap::new(VfsDomainImpl))
 }

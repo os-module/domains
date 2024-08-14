@@ -6,7 +6,7 @@ use alloc::boxed::Box;
 use core::fmt::Debug;
 
 use basic::AlienResult;
-use interface::{Basic, EmptyDeviceDomain};
+use interface::{define_unwind_for_EmptyDeviceDomain, Basic, EmptyDeviceDomain};
 use rref::RRefVec;
 
 #[derive(Debug)]
@@ -36,6 +36,8 @@ impl EmptyDeviceDomain for RandomDeviceDomainImpl {
     }
 }
 
+define_unwind_for_EmptyDeviceDomain!(RandomDeviceDomainImpl);
+
 pub fn main() -> Box<dyn EmptyDeviceDomain> {
-    Box::new(RandomDeviceDomainImpl)
+    Box::new(UnwindWrap::new(RandomDeviceDomainImpl))
 }

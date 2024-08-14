@@ -4,7 +4,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use basic::{println, AlienResult};
-use interface::{Basic, Level, LevelFilter, LogDomain};
+use interface::{define_unwind_for_LogDomain, Basic, Level, LevelFilter, LogDomain};
 use log::{Log, Metadata, Record};
 use rref::RRefVec;
 
@@ -80,6 +80,8 @@ impl Log for SimpleLogger {
     fn flush(&self) {}
 }
 
+define_unwind_for_LogDomain!(Logger);
+
 pub fn main() -> Box<dyn LogDomain> {
-    Box::new(Logger)
+    Box::new(UnwindWrap::new(Logger))
 }

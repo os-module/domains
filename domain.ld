@@ -16,7 +16,6 @@ SECTIONS
         srodata = .;
         *(.rodata .rodata.*)
         *(.srodata .srodata.*)
-        *(.eh_frame)
         . = ALIGN(4K);
         erodata = .;
     }
@@ -43,7 +42,25 @@ SECTIONS
         ebss = .;
     }
 
-    /* If we're on a newer compiler */
+    .gcc_except_table : ALIGN(4K){
+        kernel_gcc_except_table = .;
+        *(.gcc_except_table .gcc_except_table.*)
+        kernel_gcc_except_table_end = .;
+    }
+
+    .eh_frame_hdr : ALIGN(4K){
+        kernel_eh_frame_hdr = .;
+        *(.eh_frame_hdr .eh_frame_hdr.*)
+        kernel_eh_frame_hdr_end = .;
+    }
+    .eh_frame : ALIGN(4K){
+        kernel_eh_frame = .;
+        KEEP(*(.eh_frame .eh_frame.*))
+        kernel_eh_frame_end = .;
+    }
+    . = ALIGN(4K);
+
+ /* If we're on a newer compiler */
     /DISCARD/ :
     {
         *(.interp)
@@ -52,20 +69,5 @@ SECTIONS
         *(.gnu.hash)
         *(.header)
     } : phdr
-
-    .eh_frame_hdr : ALIGN(4K){
-        kernel_eh_frame_hdr = .;
-        KEEP(*(.eh_frame_hdr .eh_frame_hdr.*))
-        . = ALIGN(4K);
-        kernel_eh_frame_hdr_end = .;
-    }
-    .eh_frame : ALIGN(4K){
-        kernel_eh_frame = .;
-        KEEP(*(.eh_frame .eh_frame.*))
-        kernel_eh_frame_end = .;
-    }
-
-    . = ALIGN(4K);
-
     PROVIDE(end = .);
 }

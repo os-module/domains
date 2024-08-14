@@ -6,7 +6,7 @@ use alloc::{boxed::Box, collections::VecDeque, sync::Arc};
 use core::sync::atomic::AtomicBool;
 
 use basic::{arch::hart_id, println, sync::Mutex};
-use common_scheduler::{CommonSchedulerDomain, Scheduler};
+use common_scheduler::{CommonSchedulerDomain, Scheduler, UnwindWrap};
 use interface::SchedulerDomain;
 use rref::RRef;
 use storage::DataStorageHeap;
@@ -69,5 +69,7 @@ impl Scheduler for RandomScheduler {
 }
 
 pub fn main() -> Box<dyn SchedulerDomain> {
-    Box::new(CommonSchedulerDomain::new(Box::new(RandomScheduler::new())))
+    Box::new(UnwindWrap::new(CommonSchedulerDomain::new(Box::new(
+        RandomScheduler::new(),
+    ))))
 }

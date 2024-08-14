@@ -9,7 +9,7 @@ use alloc::{boxed::Box, string::ToString, sync::Arc};
 
 use basic::{println, sync::Mutex, DomainInfoSet};
 use custom_fs::FsKernelProvider;
-use generic::GenericFsDomain;
+use generic::{GenericFsDomain, UnwindWrap};
 use interface::FsDomain;
 use spin::Once;
 use vfscore::utils::VfsTimeSpec;
@@ -32,12 +32,12 @@ type DomainFsDomain = GenericFsDomain;
 pub fn main() -> Box<dyn FsDomain> {
     let root = domain_fs_root();
     let domain_fs = Arc::new(CustomFs::new(CommonFsProviderImpl, "domainfs", root));
-    Box::new(DomainFsDomain::new(
+    Box::new(UnwindWrap::new(DomainFsDomain::new(
         domain_fs,
         "domainfs".to_string(),
         None,
         Some(init),
-    ))
+    )))
 }
 
 static DOMAIN_INFO: Once<Arc<DomainInfoSet>> = Once::new();

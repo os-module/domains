@@ -13,3 +13,9 @@ rref = { path = "../../../domain-lib/rref"  }
 interface = { path = "../../../domain-lib/interface", features = ["domain"] }
 storage = { path = "../../../domain-lib/storage", features = ["impl"] }
 vf2_sd = { path = "../../drivers/vf2_sd" }
+
+unwind = { path = "../../../base/unwind", optional = true }
+
+[features]
+default = ["rust-unwind"]
+rust-unwind = ["dep:unwind"]

@@ -8,8 +8,11 @@ use alloc::{
     sync::Arc,
 };
 
-use basic::{println, AlienError, AlienResult};
-use interface::{Basic, BlkDeviceDomain, DeviceBase, DomainType, ShadowBlockDomain};
+use basic::{println, println_color, AlienError, AlienResult};
+use interface::{
+    define_unwind_for_ShadowBlockDomain, Basic, BlkDeviceDomain, DeviceBase, DomainType,
+    ShadowBlockDomain,
+};
 use log::error;
 use rref::RRef;
 use spin::Once;
@@ -68,20 +71,11 @@ impl ShadowBlockDomain for ShadowBlockDomainImpl {
             Ok(res) => Ok(res),
             Err(AlienError::DOMAINCRASH) => {
                 error!("domain crash, try restart domain");
-                // try restart domain once
-                let blk_domain_name = self.blk_domain_name.get().unwrap().as_str();
-                let res = basic::reload_domain(blk_domain_name);
-                if res.is_err() {
-                    error!("reload domain failed");
-                    Err(AlienError::DOMAINCRASH)
-                } else {
-                    println!(
-                        "restart domain {} ok, try read block again",
-                        blk_domain_name
-                    );
-                    data = RRef::new([0u8; 512]);
-                    blk.read_block(block, data)
-                }
+                basic::checkout_shared_data().unwrap();
+                // try reread block
+                println_color!(31, "try reread block");
+                data = RRef::new([0u8; 512]);
+                blk.read_block(block, data)
             }
             Err(e) => Err(e),
         }
@@ -100,6 +94,8 @@ impl ShadowBlockDomain for ShadowBlockDomainImpl {
     }
 }
 
+define_unwind_for_ShadowBlockDomain!(ShadowBlockDomainImpl);
+
 pub fn main() -> Box<dyn ShadowBlockDomain> {
-    Box::new(ShadowBlockDomainImpl::new())
+    Box::new(UnwindWrap::new(ShadowBlockDomainImpl::new()))
 }

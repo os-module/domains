@@ -9,7 +9,7 @@ use core::{
 };
 
 use basic::{io::SafeIORegion, println, AlienResult};
-use interface::{Basic, DeviceBase, UartDomain};
+use interface::{define_unwind_for_UartDomain, Basic, DeviceBase, UartDomain};
 use rref::RRefVec;
 use spin::Once;
 
@@ -77,6 +77,8 @@ impl UartDomain for Uart8250Domain {
     }
 }
 
+define_unwind_for_UartDomain!(Uart8250Domain);
+
 pub fn main() -> Box<dyn UartDomain> {
-    Box::new(Uart8250Domain)
+    Box::new(UnwindWrap::new(Uart8250Domain))
 }

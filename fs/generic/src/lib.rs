@@ -17,7 +17,10 @@ use core::{
 };
 
 use basic::{println, sync::Mutex, *};
-use interface::{Basic, DirEntryWrapper, DomainType, FsDomain, InodeID, MountInfo, VfsDomain};
+use interface::{
+    define_unwind_for_FsDomain, Basic, DirEntryWrapper, DomainType, FsDomain, InodeID, MountInfo,
+    VfsDomain,
+};
 use rref::{RRef, RRefVec};
 use spin::Once;
 use vfs_common::shim::{FsShimInode, RootShimDentry};
@@ -558,3 +561,4 @@ impl FsDomain for GenericFsDomain {
         Ok((name, copy_len))
     }
 }
+define_unwind_for_FsDomain!(GenericFsDomain);

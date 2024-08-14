@@ -5,7 +5,7 @@ use alloc::boxed::Box;
 use core::{cmp::min, ops::Range};
 
 use basic::{io::SafeIORegion, println, sync::Mutex, AlienError, AlienResult};
-use interface::{Basic, BlkDeviceDomain, DeviceBase};
+use interface::{define_unwind_for_BlkDeviceDomain, Basic, BlkDeviceDomain, DeviceBase};
 use rref::RRef;
 
 #[derive(Debug)]
@@ -93,6 +93,8 @@ impl BlkDeviceDomain for MemoryImg {
     }
 }
 
+define_unwind_for_BlkDeviceDomain!(MemoryImg);
+
 pub fn main() -> Box<dyn BlkDeviceDomain> {
-    Box::new(MemoryImg::new())
+    Box::new(UnwindWrap::new(MemoryImg::new()))
 }

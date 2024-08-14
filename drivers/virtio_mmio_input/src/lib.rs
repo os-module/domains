@@ -6,7 +6,7 @@ use alloc::boxed::Box;
 use core::{fmt::Debug, ops::Range};
 
 use basic::{io::SafeIORegion, sync::Mutex, AlienError, AlienResult};
-use interface::{Basic, DeviceBase, InputDomain};
+use interface::{define_unwind_for_InputDomain, Basic, DeviceBase, InputDomain};
 use spin::Once;
 use virtio_drivers::{device::input::VirtIOInput, transport::mmio::MmioTransport};
 use virtio_mmio_common::{HalImpl, SafeIORW};
@@ -49,7 +49,8 @@ impl InputDomain for InputDevDomain {
         }
     }
 }
+define_unwind_for_InputDomain!(InputDevDomain);
 
 pub fn main() -> Box<dyn InputDomain> {
-    Box::new(InputDevDomain)
+    Box::new(UnwindWrap::new(InputDevDomain))
 }

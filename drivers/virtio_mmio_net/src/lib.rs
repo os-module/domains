@@ -10,7 +10,7 @@ use core::{
 };
 
 use basic::{io::SafeIORegion, sync::Mutex, AlienResult};
-use interface::{Basic, DeviceBase, NetDeviceDomain};
+use interface::{define_unwind_for_NetDeviceDomain, Basic, DeviceBase, NetDeviceDomain};
 use rref::RRefVec;
 use spin::Once;
 use virtio_drivers::{device::net::VirtIONet, transport::mmio::MmioTransport};
@@ -105,7 +105,7 @@ impl NetDeviceDomain for VirtIoNetDomain {
         Ok((rx_buf, len))
     }
 }
-
+define_unwind_for_NetDeviceDomain!(VirtIoNetDomain);
 pub fn main() -> Box<dyn NetDeviceDomain> {
-    Box::new(VirtIoNetDomain)
+    Box::new(UnwindWrap::new(VirtIoNetDomain))
 }

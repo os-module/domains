@@ -5,7 +5,7 @@ use alloc::{boxed::Box, string::ToString, sync::Arc};
 
 use basic::sync::Mutex;
 use dynfs::DynFsKernelProvider;
-use generic::GenericFsDomain;
+use generic::{GenericFsDomain, UnwindWrap};
 use interface::FsDomain;
 use vfscore::utils::VfsTimeSpec;
 
@@ -24,5 +24,10 @@ type SysFsDomain = GenericFsDomain;
 
 pub fn main() -> Box<dyn FsDomain> {
     let pipefs = Arc::new(PipeFs::new(CommonFsProviderImpl, "procfs"));
-    Box::new(SysFsDomain::new(pipefs, "pipefs".to_string(), None, None))
+    Box::new(UnwindWrap::new(SysFsDomain::new(
+        pipefs,
+        "pipefs".to_string(),
+        None,
+        None,
+    )))
 }

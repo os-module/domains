@@ -5,7 +5,10 @@ use alloc::{boxed::Box, sync::Arc, vec::Vec};
 use core::{cmp::min, fmt::Debug, num::NonZeroUsize};
 
 use basic::{config::FRAME_SIZE, sync::Mutex, AlienResult};
-use interface::{Basic, CacheBlkDeviceDomain, DeviceBase, DomainType, ShadowBlockDomain};
+use interface::{
+    define_unwind_for_CacheBlkDeviceDomain, Basic, CacheBlkDeviceDomain, DeviceBase, DomainType,
+    ShadowBlockDomain,
+};
 use log::info;
 use lru::LruCache;
 use rref::{RRef, RRefVec};
@@ -176,6 +179,10 @@ impl CacheBlkDeviceDomain for GenericBlockDevice {
 
 pub const MAX_BLOCK_CACHE_FRAMES: usize = 1024 * 4 * 4;
 
+define_unwind_for_CacheBlkDeviceDomain!(GenericBlockDevice);
+
 pub fn main() -> Box<dyn CacheBlkDeviceDomain> {
-    Box::new(GenericBlockDevice::new(MAX_BLOCK_CACHE_FRAMES))
+    Box::new(UnwindWrap::new(GenericBlockDevice::new(
+        MAX_BLOCK_CACHE_FRAMES,
+    )))
 }
