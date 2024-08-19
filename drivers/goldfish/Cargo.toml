@@ -12,4 +12,3 @@ basic = { path = "../../../domain-lib/basic"  }
 
 rtc  = { git = "https://github.com/os-module/rtc", branch = "dev" }
 timestamp = { git = "https://github.com/Byte-OS/timestamp" }
-spin = "0"

@@ -15,4 +15,3 @@ vfscore = { git = "https://github.com/os-module/rvfs.git", features = ["linux_er
 generic = { path = "../generic" }
 pod = { git = "https://github.com/asterinas/pod", rev = "d7dba56" }
 log = "0"
-spin = "0"

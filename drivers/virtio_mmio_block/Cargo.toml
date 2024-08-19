@@ -12,5 +12,7 @@ basic = { path = "../../../domain-lib/basic"  }
 
 virtio_mmio_common = { path = "../virtio_mmio_common" }
 virtio-drivers = { git = "https://github.com/os-module/safe-virtio-drivers.git" } # safe crate
-spin = "0"
 log = "0"
+
+[features]
+crash = []

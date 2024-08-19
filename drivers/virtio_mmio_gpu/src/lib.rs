@@ -5,18 +5,26 @@ extern crate alloc;
 use alloc::boxed::Box;
 use core::{fmt::Debug, ops::Range};
 
-use basic::{io::SafeIORegion, println, sync::Mutex, AlienError, AlienResult};
+use basic::{
+    io::SafeIORegion,
+    println,
+    sync::{Mutex, Once, OnceGet},
+    AlienResult,
+};
 use interface::{define_unwind_for_GpuDomain, Basic, DeviceBase, GpuDomain};
 use rref::RRefVec;
-use spin::Once;
 use virtio_drivers::{device::gpu::VirtIOGpu, transport::mmio::MmioTransport};
 use virtio_mmio_common::{HalImpl, SafeIORW};
 
-static GPU: Once<Mutex<VirtIOGpu<HalImpl, MmioTransport>>> = Once::new();
-
-#[derive(Debug)]
 pub struct GPUDomain {
     buffer_range: Once<Range<usize>>,
+    gpu: Once<Mutex<VirtIOGpu<HalImpl, MmioTransport>>>,
+}
+
+impl Debug for GPUDomain {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str("GPUDomain")
+    }
 }
 
 impl Default for GPUDomain {
@@ -29,6 +37,7 @@ impl GPUDomain {
     pub fn new() -> Self {
         Self {
             buffer_range: Once::new(),
+            gpu: Once::new(),
         }
     }
 }
@@ -63,13 +72,12 @@ impl GpuDomain for GPUDomain {
         gpu.move_cursor(50, 50).unwrap();
         gpu.flush().unwrap();
         self.buffer_range.call_once(|| buffer_range);
-        GPU.call_once(|| Mutex::new(gpu));
+        self.gpu.call_once(|| Mutex::new(gpu));
         Ok(())
     }
 
     fn flush(&self) -> AlienResult<()> {
-        let gpu = GPU.get().unwrap();
-        gpu.lock().flush().unwrap();
+        self.gpu.get_must().lock().flush().unwrap();
         Ok(())
     }
 
@@ -78,10 +86,13 @@ impl GpuDomain for GPUDomain {
     }
 
     fn buffer_range(&self) -> AlienResult<Range<usize>> {
-        self.buffer_range.get().ok_or(AlienError::EINVAL).cloned()
+        let x = self.buffer_range.get_must().clone();
+        Ok(x)
     }
 }
+
 define_unwind_for_GpuDomain!(GPUDomain);
+
 pub fn main() -> Box<dyn GpuDomain> {
     Box::new(UnwindWrap::new(GPUDomain::new()))
 }

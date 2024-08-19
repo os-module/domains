@@ -4,7 +4,11 @@ extern crate alloc;
 use alloc::{boxed::Box, sync::Arc, vec::Vec};
 use core::{cmp::min, fmt::Debug, num::NonZeroUsize};
 
-use basic::{config::FRAME_SIZE, sync::Mutex, AlienResult};
+use basic::{
+    config::FRAME_SIZE,
+    sync::{Mutex, Once, OnceGet},
+    AlienResult,
+};
 use interface::{
     define_unwind_for_CacheBlkDeviceDomain, Basic, CacheBlkDeviceDomain, DeviceBase, DomainType,
     ShadowBlockDomain,
@@ -12,9 +16,6 @@ use interface::{
 use log::info;
 use lru::LruCache;
 use rref::{RRef, RRefVec};
-use spin::Once;
-
-static BLK: Once<Arc<dyn ShadowBlockDomain>> = Once::new();
 
 struct PageCache(Vec<RRef<[u8; 512]>>);
 
@@ -57,6 +58,7 @@ impl PageCache {
 pub struct GenericBlockDevice {
     cache: Mutex<LruCache<usize, PageCache>>,
     dirty: Mutex<Vec<usize>>,
+    blk: Once<Arc<dyn ShadowBlockDomain>>,
 }
 
 impl Debug for GenericBlockDevice {
@@ -70,13 +72,14 @@ impl GenericBlockDevice {
         Self {
             cache: Mutex::new(LruCache::new(NonZeroUsize::new(max_cache_frames).unwrap())),
             dirty: Mutex::new(Vec::new()),
+            blk: Once::new(),
         }
     }
 
     fn check(&self, page_id: usize) {
         let mut cache_lock = self.cache.lock();
         if !cache_lock.contains(&page_id) {
-            let device = BLK.get().unwrap();
+            let device = self.blk.get_must();
             // todo!(change interface)
             let start_block = page_id * FRAME_SIZE / 512;
             let end_block = start_block + FRAME_SIZE / 512;
@@ -109,7 +112,7 @@ impl Basic for GenericBlockDevice {
 
 impl DeviceBase for GenericBlockDevice {
     fn handle_irq(&self) -> AlienResult<()> {
-        BLK.get().unwrap().handle_irq()
+        self.blk.get_must().handle_irq()
     }
 }
 
@@ -123,7 +126,7 @@ impl CacheBlkDeviceDomain for GenericBlockDevice {
                     MAX_BLOCK_CACHE_FRAMES,
                     blk.get_capacity().unwrap() / (1024 * 1024)
                 );
-                BLK.call_once(|| blk);
+                self.blk.call_once(|| blk);
                 Ok(())
             }
             _ => {
@@ -169,7 +172,7 @@ impl CacheBlkDeviceDomain for GenericBlockDevice {
     }
 
     fn get_capacity(&self) -> AlienResult<u64> {
-        BLK.get().unwrap().get_capacity()
+        self.blk.get_must().get_capacity()
     }
 
     fn flush(&self) -> AlienResult<()> {

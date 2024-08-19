@@ -7,11 +7,14 @@ mod domain_info;
 extern crate alloc;
 use alloc::{boxed::Box, string::ToString, sync::Arc};
 
-use basic::{println, sync::Mutex, DomainInfoSet};
+use basic::{
+    println,
+    sync::{Mutex, Once},
+    DomainInfoSet,
+};
 use custom_fs::FsKernelProvider;
 use generic::{GenericFsDomain, UnwindWrap};
 use interface::FsDomain;
-use spin::Once;
 use vfscore::utils::VfsTimeSpec;
 
 use crate::domain_info::domain_fs_root;

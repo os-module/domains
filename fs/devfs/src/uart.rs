@@ -96,7 +96,7 @@ impl VfsFile for UARTDevice {
     fn ioctl(&self, cmd: u32, arg: usize) -> VfsResult<usize> {
         let mut io = self.io.lock();
         let cmd = TeletypeCommand::try_from(cmd).unwrap();
-        return match cmd {
+        match cmd {
             TeletypeCommand::TCGETS | TeletypeCommand::TCGETA => {
                 self.task_domain
                     .copy_to_user(arg, io.termios.as_bytes())
@@ -134,7 +134,7 @@ impl VfsFile for UARTDevice {
             _ => {
                 unimplemented!("ioctl cmd: {:?}", cmd)
             }
-        };
+        }
     }
     fn flush(&self) -> VfsResult<()> {
         Ok(())

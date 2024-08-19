@@ -105,9 +105,7 @@ impl FsDomain for GenericFsDomain {
         mount_point: &RRefVec<u8>,
         dev_inode: Option<RRef<MountInfo>>,
     ) -> AlienResult<InodeID> {
-        let mount_point = core::str::from_utf8(mount_point.as_slice())
-            .unwrap()
-            .to_string();
+        let mount_point = core::str::from_utf8(mount_point.as_slice()).unwrap();
         let dev_inode: Option<Arc<dyn VfsInode>> = match dev_inode {
             None => None,
             Some(mount_info) => {
@@ -128,7 +126,7 @@ impl FsDomain for GenericFsDomain {
                 Some(Arc::new(shim_dev_inode))
             }
         };
-        let root = self.fs.i_mount(0, &mount_point, dev_inode, &[])?;
+        let root = self.fs.i_mount(0, mount_point, dev_inode, &[])?;
         if let Some(func) = self.mount_func {
             func(&root);
         }

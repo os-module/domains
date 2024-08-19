@@ -5,16 +5,25 @@ extern crate alloc;
 use alloc::boxed::Box;
 use core::{fmt::Debug, ops::Range};
 
-use basic::{io::SafeIORegion, sync::Mutex, AlienError, AlienResult};
+use basic::{
+    io::SafeIORegion,
+    sync::{Mutex, Once, OnceGet},
+    AlienError, AlienResult,
+};
 use interface::{define_unwind_for_InputDomain, Basic, DeviceBase, InputDomain};
-use spin::Once;
 use virtio_drivers::{device::input::VirtIOInput, transport::mmio::MmioTransport};
 use virtio_mmio_common::{HalImpl, SafeIORW};
 
-static INPUT: Once<Mutex<VirtIOInput<HalImpl, MmioTransport>>> = Once::new();
+#[derive(Default)]
+pub struct InputDevDomain {
+    input: Once<Mutex<VirtIOInput<HalImpl, MmioTransport>>>,
+}
 
-#[derive(Debug)]
-pub struct InputDevDomain;
+impl Debug for InputDevDomain {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str("InputDevDomain")
+    }
+}
 
 impl Basic for InputDevDomain {
     fn domain_id(&self) -> u64 {
@@ -23,7 +32,7 @@ impl Basic for InputDevDomain {
 }
 impl DeviceBase for InputDevDomain {
     fn handle_irq(&self) -> AlienResult<()> {
-        INPUT.get().unwrap().lock().ack_interrupt().unwrap();
+        self.input.get_must().lock().ack_interrupt().unwrap();
         Ok(())
     }
 }
@@ -34,11 +43,11 @@ impl InputDomain for InputDevDomain {
         let transport = MmioTransport::new(Box::new(io_region)).unwrap();
         let input = VirtIOInput::<HalImpl, MmioTransport>::new(transport)
             .expect("failed to create input driver");
-        INPUT.call_once(|| Mutex::new(input));
+        self.input.call_once(|| Mutex::new(input));
         Ok(())
     }
     fn event_nonblock(&self) -> AlienResult<Option<u64>> {
-        match INPUT.get().unwrap().lock().pop_pending_event() {
+        match self.input.get_must().lock().pop_pending_event() {
             Ok(v) => {
                 let val = v.map(|e| {
                     (e.event_type as u64) << 48 | (e.code as u64) << 32 | (e.value) as u64
@@ -52,5 +61,5 @@ impl InputDomain for InputDevDomain {
 define_unwind_for_InputDomain!(InputDevDomain);
 
 pub fn main() -> Box<dyn InputDomain> {
-    Box::new(UnwindWrap::new(InputDevDomain))
+    Box::new(UnwindWrap::new(InputDevDomain::default()))
 }

@@ -11,4 +11,3 @@ rref = { path = "../../../domain-lib/rref"  }
 basic = { path = "../../../domain-lib/basic"  }
 
 raw_uart16550 = { git = "https://github.com/os-module/uart16550", package = "uart16550" }
-spin = "0"

@@ -7,23 +7,33 @@ mod ops;
 
 extern crate alloc;
 use alloc::boxed::Box;
-use core::ops::Range;
+use core::{fmt::Debug, ops::Range};
 
 use basic::{io::SafeIORegion, println, println_color, sync::Mutex, AlienResult};
 use interface::{define_unwind_for_BlkDeviceDomain, Basic, BlkDeviceDomain, DeviceBase};
 use rref::RRef;
-use spin::Lazy;
 use visionfive2_sd::Vf2SdDriver;
 
 use crate::ops::{SdIoImpl, SleepOpsImpl};
 
-static SD_CARD: Lazy<Mutex<Vf2SdDriver<SdIoImpl, SleepOpsImpl>>> = Lazy::new(|| {
-    let io = SafeIORegion::from(0..0);
-    Mutex::new(Vf2SdDriver::new(SdIoImpl::new(io)))
-});
+pub struct Vf2SDCardDomain {
+    sd: Mutex<Vf2SdDriver<SdIoImpl, SleepOpsImpl>>,
+}
 
-#[derive(Debug)]
-pub struct Vf2SDCardDomain;
+impl Debug for Vf2SDCardDomain {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str("Vf2SDCardDomain")
+    }
+}
+
+impl Vf2SDCardDomain {
+    pub fn empty() -> Self {
+        let io = SafeIORegion::from(0..0);
+        Self {
+            sd: Mutex::new(Vf2SdDriver::new(SdIoImpl::new(io))),
+        }
+    }
+}
 
 impl DeviceBase for Vf2SDCardDomain {
     fn handle_irq(&self) -> AlienResult<()> {
@@ -53,20 +63,20 @@ impl BlkDeviceDomain for Vf2SDCardDomain {
         fs_test::init_fatfs(sd);
         #[cfg(not(feature = "fs_test"))]
         {
-            *SD_CARD.lock() = sd;
+            *self.sd.lock() = sd;
         }
         Ok(())
     }
 
     fn read_block(&self, block: u32, mut data: RRef<[u8; 512]>) -> AlienResult<RRef<[u8; 512]>> {
-        SD_CARD
+        self.sd
             .lock()
             .read_block(block as usize, data.as_mut_slice());
         Ok(data)
     }
 
     fn write_block(&self, block: u32, data: &RRef<[u8; 512]>) -> AlienResult<usize> {
-        SD_CARD.lock().write_block(block as usize, data.as_ref());
+        self.sd.lock().write_block(block as usize, data.as_ref());
         Ok(data.len())
     }
 
@@ -82,5 +92,5 @@ impl BlkDeviceDomain for Vf2SDCardDomain {
 define_unwind_for_BlkDeviceDomain!(Vf2SDCardDomain);
 
 pub fn main() -> Box<dyn BlkDeviceDomain> {
-    Box::new(UnwindWrap::new(Vf2SDCardDomain))
+    Box::new(UnwindWrap::new(Vf2SDCardDomain::empty()))
 }

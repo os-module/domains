@@ -6,19 +6,38 @@
 
 extern crate alloc;
 use alloc::boxed::Box;
-use core::ops::Range;
+use core::{
+    fmt::{Debug, Formatter},
+    ops::Range,
+};
 
-use basic::{io::SafeIORegion, println, sync::Mutex, AlienResult};
+use basic::{
+    io::SafeIORegion,
+    println,
+    sync::{Mutex, Once, OnceGet},
+    AlienResult,
+};
 use interface::{define_unwind_for_BlkDeviceDomain, Basic, BlkDeviceDomain, DeviceBase};
 use rref::RRef;
-use spin::Once;
 use virtio_drivers::{device::block::VirtIOBlk, transport::mmio::MmioTransport};
 use virtio_mmio_common::{HalImpl, SafeIORW};
 
-static BLK: Once<Mutex<VirtIOBlk<HalImpl, MmioTransport>>> = Once::new();
+pub struct BlkDomain {
+    blk: Once<Mutex<VirtIOBlk<HalImpl, MmioTransport>>>,
+}
 
-#[derive(Debug)]
-pub struct BlkDomain;
+impl BlkDomain {
+    pub fn new() -> Self {
+        Self { blk: Once::new() }
+    }
+}
+
+impl Debug for BlkDomain {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str("BlkDomain")
+    }
+}
+
 impl Basic for BlkDomain {
     fn domain_id(&self) -> u64 {
         rref::domain_id()
@@ -40,34 +59,40 @@ impl BlkDeviceDomain for BlkDomain {
         let blk = VirtIOBlk::<HalImpl, MmioTransport>::new(transport)
             .expect("failed to create virtio_blk");
         // blk.enable_receive_interrupt()?;
-        BLK.call_once(|| Mutex::new(blk));
+        self.blk.call_once(|| Mutex::new(blk));
         Ok(())
     }
     fn read_block(&self, block: u32, mut data: RRef<[u8; 512]>) -> AlienResult<RRef<[u8; 512]>> {
+        #[cfg(feature = "crash")]
         if basic::blk_crash_trick() {
             panic!("blk crash trick");
         }
-        BLK.get()
-            .unwrap()
+        self.blk
+            .get_must()
             .lock()
             .read_blocks(block as _, data.as_mut_slice())
             .expect("failed to read block");
         Ok(data)
     }
     fn write_block(&self, block: u32, data: &RRef<[u8; 512]>) -> AlienResult<usize> {
-        BLK.get()
-            .unwrap()
+        self.blk
+            .get_must()
             .lock()
             .write_blocks(block as _, data.as_ref())
             .expect("failed to write block");
         Ok(data.len())
     }
     fn get_capacity(&self) -> AlienResult<u64> {
-        let size = BLK.get().unwrap().lock().capacity().unwrap();
+        let size = self
+            .blk
+            .get_must()
+            .lock()
+            .capacity()
+            .expect("failed to get capacity");
         Ok(size)
     }
     fn flush(&self) -> AlienResult<()> {
-        BLK.get().unwrap().lock().flush().unwrap();
+        self.blk.get_must().lock().flush().expect("failed to flush");
         Ok(())
     }
 }
@@ -75,5 +100,5 @@ impl BlkDeviceDomain for BlkDomain {
 define_unwind_for_BlkDeviceDomain!(BlkDomain);
 
 pub fn main() -> Box<dyn BlkDeviceDomain> {
-    Box::new(UnwindWrap::new(BlkDomain))
+    Box::new(UnwindWrap::new(BlkDomain::new()))
 }

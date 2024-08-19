@@ -12,4 +12,3 @@ basic = { path = "../../../domain-lib/basic"  }
 
 virtio-drivers = { git = "https://github.com/os-module/safe-virtio-drivers.git" }
 virtio_mmio_common = { path = "../virtio_mmio_common" }
-spin = "0"

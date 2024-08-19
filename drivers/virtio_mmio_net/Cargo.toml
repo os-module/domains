@@ -12,5 +12,4 @@ rref = { path = "../../../domain-lib/rref"  }
 
 virtio-drivers = { git = "https://github.com/os-module/safe-virtio-drivers" }
 virtio_mmio_common = { path = "../virtio_mmio_common" }
-spin = "0"
 log = "0"

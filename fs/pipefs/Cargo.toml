@@ -13,4 +13,3 @@ vfscore = { git = "https://github.com/os-module/rvfs.git", features = ["linux_er
 dynfs = { git = "https://github.com/os-module/rvfs.git" }
 generic = { path = "../generic" }
 log = "0"
-spin = "0"

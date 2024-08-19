@@ -6,10 +6,9 @@ use alloc::{
 };
 use core::ffi::CStr;
 
-use basic::sync::Mutex;
+use basic::sync::{Mutex, Once, OnceGet};
 use interface::{DirEntryWrapper, DomainType, FsDomain, InodeID};
 use rref::{RRef, RRefVec};
-use spin::Once;
 use vfscore::{
     dentry::VfsDentry,
     error::VfsError,
@@ -181,7 +180,7 @@ impl VfsDentry for RootShimDentry {
         );
         let mount_point = VfsMountPoint {
             root: root_dentry,
-            mount_point: self.mount_point_this.get().unwrap().clone(),
+            mount_point: self.mount_point_this.get_must().clone(),
             mnt_flags: 0,
         };
         self.mount_point.lock().replace(mount_point.clone());

@@ -10,7 +10,6 @@ rref = { path = "../../../domain-lib/rref"  }
 basic = { path = "../../../domain-lib/basic" }
 visionfive2-sd = { git = "https://github.com/os-module/visionfive2-sd.git" }
 #visionfive2-sd = { path = "../../../../os-modules/visionfive2-sd" }
-spin = "0"
 fatfs = { git = "https://github.com/os-module/rust-fatfs.git", default-features = false, features = [
     "alloc",
     "lfn",

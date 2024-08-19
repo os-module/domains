@@ -12,4 +12,3 @@ basic = { path = "../../../domain-lib/basic" }
 generic = { path = "../generic" }
 vfscore = { git = "https://github.com/os-module/rvfs.git", features = ["linux_error"] }
 custom_fs = { git = "https://github.com/os-module/rvfs.git" }
-spin = "0"

@@ -9,7 +9,5 @@ edition = "2021"
 interface = { path = "../../../domain-lib/interface"  }
 rref = { path = "../../../domain-lib/rref"  }
 basic = { path = "../../../domain-lib/basic"  }
-
-spin = "0"
 log = "0"
 lru = "0"

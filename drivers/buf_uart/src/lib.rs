@@ -5,17 +5,20 @@ extern crate alloc;
 use alloc::{boxed::Box, collections::VecDeque, sync::Arc};
 use core::fmt::Debug;
 
-use basic::{println, sync::Mutex, AlienError, AlienResult};
+use basic::{
+    println,
+    sync::{Mutex, Once, OnceGet},
+    AlienError, AlienResult,
+};
 use interface::{
     define_unwind_for_BufUartDomain, Basic, BufUartDomain, DeviceBase, DomainType, UartDomain,
 };
 use rref::RRefVec;
-use spin::Once;
 
-static UART: Once<Arc<dyn UartDomain>> = Once::new();
 #[derive(Debug)]
 pub struct Uart {
     inner: Mutex<UartInner>,
+    uart: Once<Arc<dyn UartDomain>>,
 }
 
 #[derive(Debug)]
@@ -38,6 +41,7 @@ impl Uart {
         };
         Uart {
             inner: Mutex::new(inner),
+            uart: Once::new(),
         }
     }
 }
@@ -51,7 +55,7 @@ impl Basic for Uart {
 impl DeviceBase for Uart {
     fn handle_irq(&self) -> AlienResult<()> {
         let mut inner = self.inner.lock();
-        let uart = UART.get().unwrap();
+        let uart = self.uart.get_must();
         while let Ok(Some(c)) = uart.getc() {
             inner.rx_buf.push_back(c);
             if !inner.wait_queue.is_empty() {
@@ -71,7 +75,7 @@ impl BufUartDomain for Uart {
                 // enable receive interrupt
                 // todo!(update it)
                 uart.enable_receive_interrupt()?;
-                UART.call_once(|| uart);
+                self.uart.call_once(|| uart);
                 Ok(())
             }
             ty => {
@@ -84,7 +88,7 @@ impl BufUartDomain for Uart {
     }
 
     fn putc(&self, ch: u8) -> AlienResult<()> {
-        let uart = UART.get().unwrap();
+        let uart = self.uart.get_must();
         uart.putc(ch)
     }
 
@@ -103,7 +107,7 @@ impl BufUartDomain for Uart {
     }
 
     fn put_bytes(&self, buf: &RRefVec<u8>) -> AlienResult<usize> {
-        let uart = UART.get().unwrap();
+        let uart = self.uart.get_must();
         uart.put_bytes(buf)
     }
 

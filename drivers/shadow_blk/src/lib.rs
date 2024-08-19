@@ -8,20 +8,22 @@ use alloc::{
     sync::Arc,
 };
 
-use basic::{println, println_color, AlienError, AlienResult};
+use basic::{
+    println, println_color,
+    sync::{Once, OnceGet},
+    AlienError, AlienResult,
+};
 use interface::{
     define_unwind_for_ShadowBlockDomain, Basic, BlkDeviceDomain, DeviceBase, DomainType,
     ShadowBlockDomain,
 };
 use log::error;
 use rref::RRef;
-use spin::Once;
-
-static BLOCK: Once<Arc<dyn BlkDeviceDomain>> = Once::new();
 
 #[derive(Debug)]
 pub struct ShadowBlockDomainImpl {
     blk_domain_name: Once<String>,
+    blk: Once<Arc<dyn BlkDeviceDomain>>,
 }
 
 impl Default for ShadowBlockDomainImpl {
@@ -34,10 +36,10 @@ impl ShadowBlockDomainImpl {
     pub fn new() -> Self {
         Self {
             blk_domain_name: Once::new(),
+            blk: Once::new(),
         }
     }
 }
-
 impl Basic for ShadowBlockDomainImpl {
     fn domain_id(&self) -> u64 {
         rref::domain_id()
@@ -46,10 +48,9 @@ impl Basic for ShadowBlockDomainImpl {
 
 impl DeviceBase for ShadowBlockDomainImpl {
     fn handle_irq(&self) -> AlienResult<()> {
-        BLOCK.get().unwrap().handle_irq()
+        self.blk.get_must().handle_irq()
     }
 }
-
 impl ShadowBlockDomain for ShadowBlockDomainImpl {
     fn init(&self, blk_domain: &str) -> AlienResult<()> {
         let blk = basic::get_domain(blk_domain).unwrap();
@@ -57,22 +58,22 @@ impl ShadowBlockDomain for ShadowBlockDomainImpl {
             DomainType::BlkDeviceDomain(blk) => blk,
             _ => panic!("not a block domain"),
         };
-        BLOCK.call_once(|| blk);
         self.blk_domain_name.call_once(|| blk_domain.to_string());
+        self.blk.call_once(|| blk);
         Ok(())
     }
 
     // todo!(fix it if more than one thread read the same block at the same time)
     fn read_block(&self, block: u32, data: RRef<[u8; 512]>) -> AlienResult<RRef<[u8; 512]>> {
-        let blk = BLOCK.get().unwrap();
+        let blk = self.blk.get_must();
         let mut data = data;
         let res = blk.read_block(block, data);
         match res {
             Ok(res) => Ok(res),
             Err(AlienError::DOMAINCRASH) => {
                 error!("domain crash, try restart domain");
-                basic::checkout_shared_data().unwrap();
                 // try reread block
+                basic::checkout_shared_data().expect("checkout shared data failed");
                 println_color!(31, "try reread block");
                 data = RRef::new([0u8; 512]);
                 blk.read_block(block, data)
@@ -82,15 +83,15 @@ impl ShadowBlockDomain for ShadowBlockDomainImpl {
     }
 
     fn write_block(&self, block: u32, data: &RRef<[u8; 512]>) -> AlienResult<usize> {
-        BLOCK.get().unwrap().write_block(block, data)
+        self.blk.get_must().write_block(block, data)
     }
 
     fn get_capacity(&self) -> AlienResult<u64> {
-        BLOCK.get().unwrap().get_capacity()
+        self.blk.get_must().get_capacity()
     }
 
     fn flush(&self) -> AlienResult<()> {
-        BLOCK.get().unwrap().flush()
+        self.blk.get_must().flush()
     }
 }
 

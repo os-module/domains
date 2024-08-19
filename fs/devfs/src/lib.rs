@@ -19,12 +19,11 @@ use alloc::{
 };
 use core::fmt::Debug;
 
-use basic::sync::Mutex;
+use basic::sync::{Mutex, Once, OnceGet};
 use devfs::{DevFs, DevKernelProvider};
 use generic::GenericFsDomain;
 use interface::*;
 use log::info;
-use spin::{Lazy, Once};
 use vfscore::{inode::VfsInode, utils::VfsTimeSpec};
 
 use crate::{
@@ -60,13 +59,13 @@ impl DevKernelProvider for ProviderImpl {
                         Some(dev)
                     }
                     DomainType::BufUartDomain(uart) => {
-                        let task_domain = TASK_DOMAIN.get().unwrap().clone();
+                        let task_domain = TASK_DOMAIN.get_must().clone();
                         let dev = Arc::new(UARTDevice::new(rdev.into(), uart, task_domain));
                         dev_shim.insert(rdev, dev.clone());
                         Some(dev)
                     }
                     DomainType::RtcDomain(rtc) => {
-                        let task_domain = TASK_DOMAIN.get().unwrap().clone();
+                        let task_domain = TASK_DOMAIN.get_must().clone();
                         let dev = Arc::new(RTCDevice::new(rdev.into(), rtc, task_domain));
                         dev_shim.insert(rdev, dev.clone());
                         Some(dev)
@@ -95,9 +94,8 @@ impl DevKernelProvider for ProviderImpl {
         }
     }
 }
-static DEV_INODE_MAP: Lazy<Mutex<BTreeMap<u64, Arc<dyn VfsInode>>>> =
-    Lazy::new(|| Mutex::new(BTreeMap::new()));
-static DEV_MAP: Lazy<Mutex<BTreeMap<u64, String>>> = Lazy::new(|| Mutex::new(BTreeMap::new()));
+static DEV_INODE_MAP: Mutex<BTreeMap<u64, Arc<dyn VfsInode>>> = Mutex::new(BTreeMap::new());
+static DEV_MAP: Mutex<BTreeMap<u64, String>> = Mutex::new(BTreeMap::new());
 
 static TASK_DOMAIN: Once<Arc<dyn TaskDomain>> = Once::new();
 

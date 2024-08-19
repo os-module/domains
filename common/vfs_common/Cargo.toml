@@ -12,5 +12,3 @@ rref = { path = "../../../domain-lib/rref"  }
 interface = { path = "../../../domain-lib/interface" }
 log = "0"
 storage = { path = "../../../domain-lib/storage", features = ["impl"] }
-
-spin = "0"

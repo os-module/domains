@@ -8,15 +8,20 @@ use core::{
     ops::Range,
 };
 
-use basic::{io::SafeIORegion, println, AlienResult};
+use basic::{
+    io::SafeIORegion,
+    println,
+    sync::{Once, OnceGet},
+    AlienResult,
+};
 use interface::{define_unwind_for_UartDomain, Basic, DeviceBase, UartDomain};
 use rref::RRefVec;
-use spin::Once;
 
 use crate::vf2_uart::Uart8250;
-
-static UART: Once<Uart8250<4>> = Once::new();
-struct Uart8250Domain;
+#[derive(Default)]
+struct Uart8250Domain {
+    uart: Once<Uart8250<4>>,
+}
 
 impl DeviceBase for Uart8250Domain {
     fn handle_irq(&self) -> AlienResult<()> {
@@ -42,22 +47,22 @@ impl UartDomain for Uart8250Domain {
         println!("uart_addr: {:#x}-{:#x}", region.start, region.end);
         // let io_region = SafeIORegion::from(region.clone());
         let uart = Uart8250::<4>::new(SafeIORegion::from(region.clone()));
-        UART.call_once(|| uart);
+        self.uart.call_once(|| uart);
         self.enable_receive_interrupt().unwrap();
         println!("init uart success");
         Ok(())
     }
 
     fn putc(&self, ch: u8) -> AlienResult<()> {
-        let uart = UART.get().unwrap();
+        let uart = self.uart.get_must();
         uart.putc(ch)
     }
     fn getc(&self) -> AlienResult<Option<u8>> {
-        UART.get().unwrap().getc()
+        self.uart.get_must().getc()
     }
 
     fn put_bytes(&self, buf: &RRefVec<u8>) -> AlienResult<usize> {
-        let uart = UART.get().unwrap();
+        let uart = self.uart.get_must();
         for i in 0..buf.len() {
             uart.putc(buf[i])?;
         }
@@ -65,20 +70,20 @@ impl UartDomain for Uart8250Domain {
     }
 
     fn have_data_to_get(&self) -> AlienResult<bool> {
-        UART.get().unwrap().have_data_to_get()
+        self.uart.get_must().have_data_to_get()
     }
 
     fn enable_receive_interrupt(&self) -> AlienResult<()> {
-        UART.get().unwrap().enable_receive_interrupt()
+        self.uart.get_must().enable_receive_interrupt()
     }
 
     fn disable_receive_interrupt(&self) -> AlienResult<()> {
-        UART.get().unwrap().disable_receive_interrupt()
+        self.uart.get_must().disable_receive_interrupt()
     }
 }
 
 define_unwind_for_UartDomain!(Uart8250Domain);
 
 pub fn main() -> Box<dyn UartDomain> {
-    Box::new(UnwindWrap::new(Uart8250Domain))
+    Box::new(UnwindWrap::new(Uart8250Domain::default()))
 }

@@ -3,19 +3,21 @@
 extern crate alloc;
 use alloc::{boxed::Box, collections::VecDeque, sync::Arc};
 
-use basic::{config::MAX_INPUT_EVENT_NUM, println, sync::Mutex, AlienError, AlienResult};
-use interface::{
-    define_unwind_for_BufInputDomain, define_unwind_for_EmptyDeviceDomain, Basic, BufInputDomain,
-    DeviceBase, DomainType, InputDomain,
+use basic::{
+    config::MAX_INPUT_EVENT_NUM,
+    println,
+    sync::{Mutex, Once, OnceGet},
+    AlienError, AlienResult,
 };
-use spin::Once;
-
-static INPUT_DOMAIN: Once<Arc<dyn InputDomain>> = Once::new();
+use interface::{
+    define_unwind_for_BufInputDomain, Basic, BufInputDomain, DeviceBase, DomainType, InputDomain,
+};
 
 #[derive(Debug)]
 struct BufInput {
     max_events: u32,
     inner: Mutex<BufInputInner>,
+    input: Once<Arc<dyn InputDomain>>,
 }
 
 #[derive(Debug)]
@@ -33,6 +35,7 @@ impl BufInput {
         BufInput {
             max_events,
             inner: Mutex::new(inner),
+            input: Once::new(),
         }
     }
 }
@@ -40,7 +43,7 @@ impl BufInput {
 impl DeviceBase for BufInput {
     fn handle_irq(&self) -> AlienResult<()> {
         let mut inner = self.inner.lock();
-        let input_domain = INPUT_DOMAIN.get().unwrap();
+        let input_domain = self.input.get_must();
         let mut count = 0;
         while let Some(event) = input_domain.event_nonblock()? {
             // info!("event: {:?}", event);
@@ -72,7 +75,7 @@ impl BufInputDomain for BufInput {
         let input_domain = basic::get_domain(input_domain_name).unwrap();
         match input_domain {
             DomainType::InputDomain(input) => {
-                INPUT_DOMAIN.call_once(|| input);
+                self.input.call_once(|| input);
                 Ok(())
             }
             ty => {
