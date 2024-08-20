@@ -17,9 +17,7 @@ page_table = { git = "https://github.com/os-module/page-table.git", package = "p
 memory_addr = { git ="https://github.com/os-module/memory_addr" }
 
 pod = { git = "https://github.com/asterinas/pod", rev = "d7dba56" }
-
-#ptable = { git = "https://github.com/os-module/vmspace", package = "vmspace" }
-ptable = { path = "../../../../os-modules/vmspace", package = "vmspace" }
+ptable = { git = "https://github.com/os-module/vmspace", package = "vmspace" }
 
 
 spin = "0"
