@@ -308,16 +308,16 @@ impl FsDomain for GenericFsDomain {
         &self,
         inode: InodeID,
         offset: u64,
-        mut buf: RRefVec<u8>,
+        buf: RRefVec<u8>,
     ) -> AlienResult<(RRefVec<u8>, usize)> {
         let inode = self.dentry_map.lock().index(&inode).inode()?;
-        let r = inode.read_at(offset, buf.as_mut_slice())?;
+        let (buf, r) = inode.read_at(offset, buf)?;
         Ok((buf, r))
     }
 
     fn write_at(&self, inode: InodeID, offset: u64, buf: &RRefVec<u8>) -> AlienResult<usize> {
         let inode = self.dentry_map.lock().index(&inode).inode()?;
-        let w = inode.write_at(offset, buf.as_slice())?;
+        let w = inode.write_at(offset, buf)?;
         Ok(w)
     }
 
@@ -468,9 +468,9 @@ impl FsDomain for GenericFsDomain {
         Ok(inode_id)
     }
 
-    fn readlink(&self, inode: InodeID, mut buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn readlink(&self, inode: InodeID, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
         let inode = self.dentry_map.lock().index(&inode).inode()?;
-        let l = inode.readlink(buf.as_mut_slice())?;
+        let (buf, l) = inode.readlink(buf)?;
         Ok((buf, l))
     }
 

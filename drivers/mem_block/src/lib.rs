@@ -6,7 +6,7 @@ use core::{cmp::min, ops::Range};
 
 use basic::{io::SafeIORegion, println, sync::Mutex, AlienError, AlienResult};
 use interface::{define_unwind_for_BlkDeviceDomain, Basic, BlkDeviceDomain, DeviceBase};
-use rref::RRef;
+use rref::{RRef, RRefVec};
 
 #[derive(Debug)]
 pub struct MemoryImg {
@@ -78,12 +78,12 @@ impl BlkDeviceDomain for MemoryImg {
         *self.data.lock() = io_region;
         Ok(())
     }
-    fn read_block(&self, block: u32, mut data: RRef<[u8; 512]>) -> AlienResult<RRef<[u8; 512]>> {
+    fn read_block(&self, block: u32, mut data: RRefVec<u8>) -> AlienResult<RRefVec<u8>> {
         self.read_blocks(block as _, data.as_mut_slice())?;
         Ok(data)
     }
-    fn write_block(&self, block: u32, data: &RRef<[u8; 512]>) -> AlienResult<usize> {
-        self.write_blocks(block as _, data.as_ref())
+    fn write_block(&self, block: u32, data: &RRefVec<u8>) -> AlienResult<usize> {
+        self.write_blocks(block as _, data.as_slice())
     }
     fn get_capacity(&self) -> AlienResult<u64> {
         Ok(self.data.lock().size() as u64)

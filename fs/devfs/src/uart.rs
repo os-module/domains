@@ -49,7 +49,8 @@ impl UARTDevice {
 }
 
 impl VfsFile for UARTDevice {
-    fn read_at(&self, _offset: u64, buf: &mut [u8]) -> VfsResult<usize> {
+    fn read_at(&self, _offset: u64, mut _buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
+        let buf = _buf.as_mut_slice();
         // read util \r and transform to \n
         let mut read_count = 0;
         loop {
@@ -76,11 +77,10 @@ impl VfsFile for UARTDevice {
                 break;
             }
         }
-        Ok(read_count)
+        Ok((_buf, read_count))
     }
-    fn write_at(&self, _offset: u64, buf: &[u8]) -> VfsResult<usize> {
-        let buf = RRefVec::from_slice(buf);
-        self.device.put_bytes(&buf).unwrap();
+    fn write_at(&self, _offset: u64, buf: &RRefVec<u8>) -> VfsResult<usize> {
+        self.device.put_bytes(buf).unwrap();
         Ok(buf.len())
     }
     fn poll(&self, event: VfsPollEvents) -> VfsResult<VfsPollEvents> {

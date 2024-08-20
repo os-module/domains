@@ -1,13 +1,17 @@
-#![no_std]
-#![forbid(unsafe_code)]
-mod frame;
-extern crate alloc;
 use alloc::{boxed::Box, sync::Arc, vec::Vec};
-use core::{cmp::min, fmt::Debug, num::NonZeroUsize};
+use core::{
+    cmp::min,
+    fmt::Debug,
+    num::NonZeroUsize,
+    ops::{Deref, DerefMut, Index, IndexMut},
+};
 
 use basic::{
     config::FRAME_SIZE,
+    println_color,
     sync::{Mutex, Once, OnceGet},
+    time::read_time_us,
+    vm::frame::FrameTracker,
     AlienResult,
 };
 use interface::{
@@ -18,41 +22,19 @@ use log::info;
 use lru::LruCache;
 use rref::{RRef, RRefVec};
 
-struct PageCache(Vec<RRefVec<u8>>);
+struct PageCache(FrameTracker);
 
-impl PageCache {
-    pub fn get(&self, index: usize) -> &RRefVec<u8> {
-        &self.0[index]
+impl Index<usize> for PageCache {
+    type Output = [u8];
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0.deref()[index * 512..(index + 1) * 512]
     }
+}
 
-    pub fn copy_to(&self, offset: usize, buf: &mut [u8]) {
-        let mut count = 0;
-        let start_slice = offset / 512;
-        let mut start_offset = offset % 512;
-        let mut index = start_slice;
-        while count < buf.len() {
-            let copy_len = min(512 - start_offset, buf.len() - count);
-            buf[count..count + copy_len]
-                .copy_from_slice(&self.0[index].as_slice()[start_offset..start_offset + copy_len]);
-            count += copy_len;
-            start_offset = 0;
-            index += 1;
-        }
-    }
-
-    pub fn copy_from(&mut self, offset: usize, buf: &[u8]) {
-        let mut count = 0;
-        let start_slice = offset / 512;
-        let mut start_offset = offset % 512;
-        let mut index = start_slice;
-        while count < buf.len() {
-            let copy_len = min(512 - start_offset, buf.len() - count);
-            self.0[index].as_mut_slice()[start_offset..start_offset + copy_len]
-                .copy_from_slice(&buf[count..count + copy_len]);
-            count += copy_len;
-            start_offset = 0;
-            index += 1;
-        }
+impl IndexMut<usize> for PageCache {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.0.deref_mut()[index * 512..(index + 1) * 512]
     }
 }
 
@@ -79,28 +61,37 @@ impl GenericBlockDevice {
 
     fn check(&self, page_id: usize) {
         let mut cache_lock = self.cache.lock();
+        // static MASK: AtomicBool = AtomicBool::new(true);
         if !cache_lock.contains(&page_id) {
+            // let now = read_time_us();
             let device = self.blk.get_must();
             // todo!(change interface)
             let start_block = page_id * FRAME_SIZE / 512;
             let end_block = start_block + FRAME_SIZE / 512;
-            let mut cache = Vec::with_capacity(4);
+            let mut frame = FrameTracker::new(1);
             for i in start_block..end_block {
-                let cache_slice = RRefVec::new_uninit(512);
-                let cache_slice = device.read_block(i as u32, cache_slice).unwrap();
-                cache.push(cache_slice);
+                let target_buf = &mut frame[(i - start_block) * 512..(i - start_block + 1) * 512];
+                let cache_slice = RRefVec::from_other_rvec_slice(target_buf);
+                let _cache_slice = device.read_block(i as u32, cache_slice).unwrap();
             }
-            let cache = PageCache(cache);
+            let cache = PageCache(frame);
             let old_cache = cache_lock.push(page_id, cache);
             if let Some((id, old_cache)) = old_cache {
                 let start_block = id * FRAME_SIZE / 512;
                 let end_block = start_block + FRAME_SIZE / 512;
                 for i in start_block..end_block {
-                    let tmp_buf = old_cache.get(i - start_block);
-                    device.write_block(i as u32, tmp_buf).unwrap();
+                    let target_buf =
+                        &old_cache.0[(i - start_block) * 512..(i - start_block + 1) * 512];
+                    let tmp_buf = RRefVec::from_other_rvec_slice(target_buf);
+                    device.write_block(i as u32, &tmp_buf).unwrap();
                     self.dirty.lock().retain(|&x| x != id);
                 }
             }
+            // let end = read_time_us();
+            // if MASK.load(core::sync::atomic::Ordering::Relaxed) {
+            //     println_color!(31, "read block: {}us", end - now);
+            //     MASK.store(false, core::sync::atomic::Ordering::Relaxed);
+            // }
         }
     }
 }
@@ -146,7 +137,11 @@ impl CacheBlkDeviceDomain for GenericBlockDevice {
             let mut cache_lock = self.cache.lock();
             let cache = cache_lock.get(&page_id).unwrap();
             let copy_len = min(FRAME_SIZE - offset, len - count);
-            cache.copy_to(offset, &mut buf.as_mut_slice()[count..count + copy_len]);
+            // cache.copy_to(offset, &mut buf.as_mut_slice()[count..count + copy_len]);
+
+            buf.as_mut_slice()[count..count + copy_len]
+                .copy_from_slice(&cache.0[offset..offset + copy_len]);
+
             count += copy_len;
             offset = 0;
             page_id += 1;
@@ -164,7 +159,9 @@ impl CacheBlkDeviceDomain for GenericBlockDevice {
             let mut cache_lock = self.cache.lock();
             let cache = cache_lock.get_mut(&page_id).unwrap();
             let copy_len = min(FRAME_SIZE - offset, len - count);
-            cache.copy_from(offset, &buf.as_slice()[count..count + copy_len]);
+            // cache.copy_from(offset, &buf.as_slice()[count..count + copy_len]);
+            cache.0[offset..offset + copy_len]
+                .copy_from_slice(&buf.as_slice()[count..count + copy_len]);
             count += copy_len;
             offset = (offset + copy_len) % FRAME_SIZE;
             page_id += 1;
@@ -185,10 +182,9 @@ pub const MAX_BLOCK_CACHE_FRAMES: usize = 1024 * 4 * 4;
 
 define_unwind_for_CacheBlkDeviceDomain!(GenericBlockDevice);
 
-// pub fn main() -> Box<dyn CacheBlkDeviceDomain> {
-//     Box::new(UnwindWrap::new(GenericBlockDevice::new(
-//         MAX_BLOCK_CACHE_FRAMES,
-//     )))
-// }
-
-pub use frame::main;
+pub fn main() -> Box<dyn CacheBlkDeviceDomain> {
+    println_color!(31, "GenericBlockDevice with frame");
+    Box::new(UnwindWrap::new(GenericBlockDevice::new(
+        MAX_BLOCK_CACHE_FRAMES,
+    )))
+}

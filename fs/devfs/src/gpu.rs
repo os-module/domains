@@ -23,17 +23,16 @@ impl GPUDevice {
 }
 
 impl VfsFile for GPUDevice {
-    fn read_at(&self, _offset: u64, _buf: &mut [u8]) -> VfsResult<usize> {
+    fn read_at(&self, _offset: u64, _buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
         Err(VfsError::Invalid)
     }
-    fn write_at(&self, offset: u64, buf: &[u8]) -> VfsResult<usize> {
+    fn write_at(&self, offset: u64, buf: &RRefVec<u8>) -> VfsResult<usize> {
         // let gbuf = self.device.get_framebuffer();
         // let offset = offset as usize;
         // let gbuf_len = gbuf.len();
         // let min_len = (gbuf_len - offset).min(buf.len());
         // gbuf[offset..offset + min_len].copy_from_slice(&buf[..min_len]);
-        let share_buf = RRefVec::from_slice(buf);
-        let w = self.device.fill(offset as u32, &share_buf).unwrap();
+        let w = self.device.fill(offset as u32, buf).unwrap();
         Ok(w)
     }
     fn flush(&self) -> VfsResult<()> {

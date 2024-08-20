@@ -5,8 +5,8 @@ edition = "2021"
 
 [dependencies]
 basic = { path = "../../../domain-lib/basic" }
-vfscore = { git = "https://github.com/os-module/rvfs.git", features = ["linux_error"] }
-unifs = { git = "https://github.com/os-module/rvfs.git" }
+vfscore = { path = "../../../rvfs-ref/vfscore-ref", package = "vfscore-ref", features = ["linux_error"] }
+unifs = { path = "../../../rvfs-ref/unifs-ref", package = "unifs-ref" }
 rref = { path = "../../../domain-lib/rref"  }
 
 interface = { path = "../../../domain-lib/interface" }

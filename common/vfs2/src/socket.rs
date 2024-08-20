@@ -65,16 +65,16 @@ impl SocketFile {
 }
 
 impl File for SocketFile {
-    fn read(&self, buf: &mut [u8]) -> AlienResult<usize> {
+    fn read(&self, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
         if buf.is_empty() {
-            return Ok(0);
+            return Ok((buf, 0));
         }
         let pos = *self.pos.lock();
-        let read = self.read_at(pos, buf)?;
+        let (buf, read) = self.read_at(pos, buf)?;
         *self.pos.lock() += read as u64;
-        Ok(read)
+        Ok((buf, read))
     }
-    fn write(&self, buf: &[u8]) -> AlienResult<usize> {
+    fn write(&self, buf: &RRefVec<u8>) -> AlienResult<usize> {
         if buf.is_empty() {
             return Ok(0);
         }
@@ -84,24 +84,20 @@ impl File for SocketFile {
         Ok(write)
     }
 
-    fn read_at(&self, offset: u64, buf: &mut [u8]) -> AlienResult<usize> {
+    fn read_at(&self, offset: u64, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
         if buf.is_empty() {
-            return Ok(0);
+            return Ok((buf, 0));
         }
         let open_flag = self.open_flag.lock();
         if !open_flag.contains(OpenFlags::O_RDONLY) && !open_flag.contains(OpenFlags::O_RDWR) {
             return Err(AlienError::EPERM);
         }
         drop(open_flag);
-        let shared_buf = RRefVec::from_slice(buf);
-        let (shared_buf, len) =
-            self.net_stack_domain
-                .read_at(self.socket_id, offset, shared_buf)?;
-        buf[..len].copy_from_slice(&shared_buf.as_slice()[..len]);
-        Ok(len)
+        let (shared_buf, len) = self.net_stack_domain.read_at(self.socket_id, offset, buf)?;
+        Ok((shared_buf, len))
     }
 
-    fn write_at(&self, offset: u64, buf: &[u8]) -> AlienResult<usize> {
+    fn write_at(&self, offset: u64, buf: &RRefVec<u8>) -> AlienResult<usize> {
         if buf.is_empty() {
             return Ok(0);
         }
@@ -109,10 +105,9 @@ impl File for SocketFile {
         if !open_flag.contains(OpenFlags::O_WRONLY) && !open_flag.contains(OpenFlags::O_RDWR) {
             return Err(AlienError::EPERM);
         }
-        let shared_buf = RRefVec::from_slice(buf);
         let write = self
             .net_stack_domain
-            .write_at(self.socket_id, offset, &shared_buf)?;
+            .write_at(self.socket_id, offset, buf)?;
         Ok(write)
     }
 

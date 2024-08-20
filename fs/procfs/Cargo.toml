@@ -10,6 +10,6 @@ rref = { path = "../../../domain-lib/rref"  }
 basic = { path = "../../../domain-lib/basic"  }
 
 generic = { path = "../generic" }
-vfscore = { git = "https://github.com/os-module/rvfs.git", features = ["linux_error"] }
-dynfs = { git = "https://github.com/os-module/rvfs.git" }
+vfscore = { path = "../../../rvfs-ref/vfscore-ref", package = "vfscore-ref", features = ["linux_error"] }
+dynfs = { path = "../../../rvfs-ref/dynfs-ref", package = "dynfs-ref" }
 log = "0"

@@ -118,7 +118,7 @@ impl VfsDentry for RootShimDentry {
         if !self.name.lock().is_empty() {
             return self.name.lock().clone();
         }
-        let buf = RRefVec::new(0, 32);
+        let buf = RRefVec::new_uninit(32);
         let (buf, l) = self.fs_domain.dentry_name(self.inode_id, buf).unwrap();
         let name = core::str::from_utf8(&buf.as_slice()[..l])
             .unwrap()
@@ -265,7 +265,7 @@ impl VfsDentry for RootShimDentry {
         if !self.path.lock().is_empty() {
             return self.path.lock().clone();
         }
-        let buf = RRefVec::new(0, 64);
+        let buf = RRefVec::new_uninit(64);
         let (buf, l) = self.fs_domain.dentry_path(self.inode_id, buf).unwrap();
         let path = core::str::from_utf8(&buf.as_slice()[..l])
             .unwrap()
@@ -317,21 +317,18 @@ impl FsShimInode {
 }
 
 impl VfsFile for FsShimInode {
-    fn read_at(&self, offset: u64, buf: &mut [u8]) -> VfsResult<usize> {
-        let shared_buf = RRefVec::new(0, buf.len());
-        let (shared_buf, len) = self.fs_domain.read_at(self.ino, offset, shared_buf)?;
-        buf[..len].copy_from_slice(&shared_buf.as_slice()[..len]);
-        Ok(len)
+    fn read_at(&self, offset: u64, buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
+        let (shared_buf, len) = self.fs_domain.read_at(self.ino, offset, buf)?;
+        Ok((shared_buf, len))
     }
-    fn write_at(&self, offset: u64, buf: &[u8]) -> VfsResult<usize> {
-        let shared_buf = RRefVec::from_slice(buf);
-        let len = self.fs_domain.write_at(self.ino, offset, &shared_buf)?;
+    fn write_at(&self, offset: u64, buf: &RRefVec<u8>) -> VfsResult<usize> {
+        let len = self.fs_domain.write_at(self.ino, offset, buf)?;
         Ok(len)
     }
     fn readdir(&self, start_index: usize) -> VfsResult<Option<VfsDirEntry>> {
         // todo!(fix name len)
-        let shared_name = [0; 64];
-        let dir_entry = RRef::new(DirEntryWrapper::new(shared_name));
+        // let shared_name = [0; 64];
+        let dir_entry = RRef::<DirEntryWrapper>::new_uninit();
         let dir_entry = self.fs_domain.readdir(self.ino, start_index, dir_entry)?;
         if dir_entry.name_len == 0 {
             Ok(None)
@@ -425,11 +422,9 @@ impl VfsInode for FsShimInode {
         self.fs_domain.rmdir(self.ino, &shared_name)?;
         Ok(())
     }
-    fn readlink(&self, buf: &mut [u8]) -> VfsResult<usize> {
-        let shared_buf = RRefVec::new(0, buf.len());
-        let (shared_buf, len) = self.fs_domain.readlink(self.ino, shared_buf)?;
-        buf[..len].copy_from_slice(&shared_buf.as_slice()[..len]);
-        Ok(len)
+    fn readlink(&self, buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
+        let (shared_buf, len) = self.fs_domain.readlink(self.ino, buf)?;
+        Ok((shared_buf, len))
     }
     fn set_attr(&self, attr: InodeAttr) -> VfsResult<()> {
         self.fs_domain.set_attr(self.ino, attr)?;
@@ -502,7 +497,7 @@ impl VfsSuperBlock for ShimSuperBlock {
     }
 
     fn stat_fs(&self) -> VfsResult<VfsFsStat> {
-        let fs_stat = RRef::new(VfsFsStat::default());
+        let fs_stat = RRef::<VfsFsStat>::new_uninit();
         let fs_stat = self.fs_domain.stat_fs(fs_stat)?;
         Ok(*fs_stat)
     }
@@ -550,7 +545,7 @@ impl VfsFsType for ShimFs {
     }
 
     fn fs_name(&self) -> String {
-        let buf = RRefVec::new(0, 32);
+        let buf = RRefVec::new_uninit(32);
         let (buf, len) = self.fs_domain.fs_name(buf).unwrap();
         core::str::from_utf8(&buf.as_slice()[..len])
             .unwrap()

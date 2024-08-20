@@ -87,7 +87,7 @@ impl DeviceBase for NetStack {
         info!("<handle_irq> NetStack handle_irq");
         let nic = NET_INTERFACE.get().unwrap();
         nic.handle_irq()?;
-        let mut shared_buf = RRefVec::new(0, 1600);
+        let mut shared_buf = RRefVec::new_uninit(1600);
         while nic.can_receive()? {
             let (mut buf, len) = nic.receive(shared_buf).unwrap();
             debug!("recv data {} bytes", len);

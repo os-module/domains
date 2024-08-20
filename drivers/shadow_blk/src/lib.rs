@@ -18,7 +18,7 @@ use interface::{
     ShadowBlockDomain,
 };
 use log::error;
-use rref::RRef;
+use rref::{RRef, RRefVec};
 
 #[derive(Debug)]
 pub struct ShadowBlockDomainImpl {
@@ -64,7 +64,7 @@ impl ShadowBlockDomain for ShadowBlockDomainImpl {
     }
 
     // todo!(fix it if more than one thread read the same block at the same time)
-    fn read_block(&self, block: u32, data: RRef<[u8; 512]>) -> AlienResult<RRef<[u8; 512]>> {
+    fn read_block(&self, block: u32, data: RRefVec<u8>) -> AlienResult<RRefVec<u8>> {
         let blk = self.blk.get_must();
         let mut data = data;
         let res = blk.read_block(block, data);
@@ -73,16 +73,16 @@ impl ShadowBlockDomain for ShadowBlockDomainImpl {
             Err(AlienError::DOMAINCRASH) => {
                 error!("domain crash, try restart domain");
                 // try reread block
-                basic::checkout_shared_data().expect("checkout shared data failed");
+                basic::checkout_shared_data().unwrap();
                 println_color!(31, "try reread block");
-                data = RRef::new([0u8; 512]);
+                data = RRefVec::<u8>::new_uninit(512);
                 blk.read_block(block, data)
             }
             Err(e) => Err(e),
         }
     }
 
-    fn write_block(&self, block: u32, data: &RRef<[u8; 512]>) -> AlienResult<usize> {
+    fn write_block(&self, block: u32, data: &RRefVec<u8>) -> AlienResult<usize> {
         self.blk.get_must().write_block(block, data)
     }
 

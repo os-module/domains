@@ -12,7 +12,6 @@ use vfscore::{
     VfsResult,
 };
 
-// like null/random device
 pub struct EmptyDevice {
     device_id: DeviceId,
     domain: Arc<dyn EmptyDeviceDomain>,
@@ -24,13 +23,12 @@ impl EmptyDevice {
 }
 
 impl VfsFile for EmptyDevice {
-    fn read_at(&self, _offset: u64, buf: &mut [u8]) -> VfsResult<usize> {
-        let shared_buf = RRefVec::new(0, buf.len());
-        let shared_buf = self.domain.read(shared_buf)?;
-        buf.copy_from_slice(shared_buf.as_slice());
-        Ok(buf.len())
+    fn read_at(&self, _offset: u64, buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
+        let shared_buf = self.domain.read(buf)?;
+        let len = shared_buf.len();
+        Ok((shared_buf, len))
     }
-    fn write_at(&self, _offset: u64, buf: &[u8]) -> VfsResult<usize> {
+    fn write_at(&self, _offset: u64, buf: &RRefVec<u8>) -> VfsResult<usize> {
         Ok(buf.len())
     }
 }

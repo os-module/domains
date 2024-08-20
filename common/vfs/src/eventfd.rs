@@ -9,6 +9,7 @@ use basic::{
     sync::Mutex,
     AlienError, AlienResult,
 };
+use rref::RRefVec;
 use vfscore::{dentry::VfsDentry, inode::VfsInode, utils::VfsFileStat};
 
 use crate::kfile::File;
@@ -51,7 +52,7 @@ impl EventFdInode {
 }
 
 impl File for EventFdInode {
-    fn read(&self, buf: &mut [u8]) -> AlienResult<usize> {
+    fn read(&self, mut buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
         if buf.len() < 8 {
             return Err(AlienError::EINVAL);
         }
@@ -80,14 +81,14 @@ impl File for EventFdInode {
             eventfd.count = 0;
         }
         let val_bytes = val.to_ne_bytes();
-        buf[..8].copy_from_slice(&val_bytes);
-        return Ok(8);
+        buf.as_mut_slice()[..8].copy_from_slice(&val_bytes);
+        Ok((buf, 8))
     }
-    fn write(&self, buf: &[u8]) -> AlienResult<usize> {
+    fn write(&self, buf: &RRefVec<u8>) -> AlienResult<usize> {
         if buf.len() < 8 {
             return Err(AlienError::EINVAL);
         }
-        let val = u64::from_ne_bytes(buf[..8].try_into().unwrap());
+        let val = u64::from_ne_bytes(buf.as_slice()[..8].try_into().unwrap());
         if val == u64::MAX {
             return Err(AlienError::EINVAL);
         }
@@ -113,13 +114,13 @@ impl File for EventFdInode {
         while let Some(tid) = self.wait_queue.lock().pop_front() {
             basic::wake_up_wait_task(tid)?;
         }
-        return Ok(8);
+        Ok(8)
     }
-    fn read_at(&self, _offset: u64, buf: &mut [u8]) -> AlienResult<usize> {
+    fn read_at(&self, _offset: u64, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
         self.read(buf)
     }
-    fn write_at(&self, _offset: u64, _buf: &[u8]) -> AlienResult<usize> {
-        self.write(_buf)
+    fn write_at(&self, _offset: u64, buf: &RRefVec<u8>) -> AlienResult<usize> {
+        self.write(buf)
     }
 
     fn seek(&self, _pos: SeekFrom) -> AlienResult<u64> {

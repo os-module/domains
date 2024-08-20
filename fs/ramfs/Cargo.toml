@@ -10,6 +10,6 @@ interface = { path = "../../../domain-lib/interface"  }
 basic = { path = "../../../domain-lib/basic"  }
 
 generic = { path = "../generic" }
-ramfs = { git = "https://github.com/os-module/rvfs.git" }
-vfscore = { git = "https://github.com/os-module/rvfs.git", features = ["linux_error"] }
+ramfs = { path = "../../../rvfs-ref/ramfs-ref", package = "ramfs-ref" }
+vfscore = { path = "../../../rvfs-ref/vfscore-ref", package = "vfscore-ref", features = ["linux_error"] }
 log = "0"

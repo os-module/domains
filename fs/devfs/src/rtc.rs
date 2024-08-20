@@ -7,7 +7,7 @@ use basic::constants::{
 };
 use interface::{RtcDomain, TaskDomain};
 use pod::Pod;
-use rref::RRef;
+use rref::{RRef, RRefVec};
 use vfscore::{
     error::VfsError,
     file::VfsFile,
@@ -34,16 +34,16 @@ impl RTCDevice {
 }
 
 impl VfsFile for RTCDevice {
-    fn read_at(&self, _offset: u64, buf: &mut [u8]) -> VfsResult<usize> {
+    fn read_at(&self, _offset: u64, mut buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
         let mut time = RRef::new(RtcTime::default());
         time = self.device.read_time(time).unwrap();
         let str = format!("{:?}", time.deref());
         let bytes = str.as_bytes();
         let min_len = min(buf.len(), bytes.len());
-        buf[..min_len].copy_from_slice(&bytes[..min_len]);
-        Ok(min_len)
+        buf.as_mut_slice()[..min_len].copy_from_slice(&bytes[..min_len]);
+        Ok((buf, min_len))
     }
-    fn write_at(&self, _offset: u64, _buf: &[u8]) -> VfsResult<usize> {
+    fn write_at(&self, _offset: u64, _buf: &RRefVec<u8>) -> VfsResult<usize> {
         todo!()
     }
     fn ioctl(&self, cmd: u32, arg: usize) -> VfsResult<usize> {

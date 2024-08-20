@@ -3,6 +3,7 @@ use alloc::{sync::Arc, vec};
 use basic::{println, AlienResult};
 use core2::io::Read;
 use cpio_reader::Mode;
+use rref::RRefVec;
 use vfscore::{
     dentry::VfsDentry,
     path::VfsPath,
@@ -36,7 +37,8 @@ fn parse_initrd_data(root: Arc<dyn VfsDentry>, initrd: &[u8]) -> AlienResult<()>
             } else if mode.contains(Mode::REGULAR_FILE) {
                 // create file
                 let f = path.join(name)?.open(Some(inode_mode))?;
-                f.inode()?.write_at(0, entry.file())?;
+                let data = RRefVec::from_other_rvec_slice(entry.file());
+                f.inode()?.write_at(0, &data)?;
             }
         }
     }

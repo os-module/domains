@@ -31,4 +31,4 @@ build-std-features = ["compiler-builtins-mem"]
 #panic = "abort"
 lto = true
 strip = true
-opt-level = "z"  # Optimize for size.
+opt-level = 3  # Optimize for size.

@@ -2,6 +2,7 @@ use alloc::sync::Arc;
 
 use basic::constants::DeviceId;
 use interface::BufInputDomain;
+use rref::RRefVec;
 use vfscore::{
     error::VfsError,
     file::VfsFile,
@@ -23,16 +24,16 @@ impl INPUTDevice {
 }
 
 impl VfsFile for INPUTDevice {
-    fn read_at(&self, _offset: u64, buf: &mut [u8]) -> VfsResult<usize> {
+    fn read_at(&self, _offset: u64, mut buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
         if buf.len() != 8 {
             return Err(VfsError::Invalid);
         }
         let event = self.device.event_block().unwrap();
         let event_bytes = event.to_be_bytes();
-        buf.copy_from_slice(&event_bytes);
-        Ok(1)
+        buf.as_mut_slice().copy_from_slice(&event_bytes);
+        Ok((buf, 1))
     }
-    fn write_at(&self, _offset: u64, _buf: &[u8]) -> VfsResult<usize> {
+    fn write_at(&self, _offset: u64, _buf: &RRefVec<u8>) -> VfsResult<usize> {
         Err(VfsError::Invalid)
     }
     fn poll(&self, event: VfsPollEvents) -> VfsResult<VfsPollEvents> {

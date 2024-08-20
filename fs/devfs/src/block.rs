@@ -23,19 +23,17 @@ impl BLKDevice {
 }
 
 impl VfsFile for BLKDevice {
-    fn read_at(&self, offset: u64, buf: &mut [u8]) -> VfsResult<usize> {
-        let share_buf = RRefVec::new(0, buf.len());
-        let res = self
+    fn read_at(&self, offset: u64, buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
+        let len = buf.len();
+        let buf = self
             .device
-            .read(offset, share_buf)
+            .read(offset, buf)
             .map_err(|_| VfsError::IoError)?;
-        buf.copy_from_slice(res.as_slice());
-        Ok(buf.len())
+        Ok((buf, len))
     }
-    fn write_at(&self, offset: u64, buf: &[u8]) -> VfsResult<usize> {
-        let share_buf = RRefVec::from_slice(buf);
+    fn write_at(&self, offset: u64, buf: &RRefVec<u8>) -> VfsResult<usize> {
         self.device
-            .write(offset, &share_buf)
+            .write(offset, buf)
             .map_err(|_| VfsError::IoError)?;
         Ok(buf.len())
     }

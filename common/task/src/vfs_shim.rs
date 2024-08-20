@@ -36,7 +36,7 @@ impl ShimFile {
     }
 
     fn get_attr(&self) -> AlienResult<RRef<VfsFileStat>> {
-        let attr = RRef::new(VfsFileStat::default());
+        let attr = RRef::<VfsFileStat>::new_uninit();
         let res = VFS_DOMAIN.get().unwrap().vfs_getattr(self.id, attr);
         res
     }
@@ -75,7 +75,7 @@ pub fn read_all(file_name: &str, buf: &mut Vec<u8>) -> bool {
     let shim_file = ShimFile::new(res.unwrap());
     let size = shim_file.get_attr().unwrap().st_size;
     let mut offset = 0;
-    let mut tmp = RRefVec::new(0, 512);
+    let mut tmp = RRefVec::new_uninit(1024);
     let mut res;
     while offset < size {
         (tmp, res) = shim_file.read_at(offset, tmp).unwrap();

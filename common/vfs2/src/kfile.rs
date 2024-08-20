@@ -11,6 +11,7 @@ use basic::{
 };
 use downcast_rs::{impl_downcast, DowncastSync};
 use interface::InodeID;
+use rref::RRefVec;
 use storage::{DataStorageHeap, StorageBuilder};
 use vfs_common::meta::KernelFileMeta;
 use vfscore::{
@@ -84,12 +85,12 @@ impl KernelFile {
 }
 
 pub trait File: DowncastSync + Debug {
-    fn read(&self, buf: &mut [u8]) -> AlienResult<usize>;
-    fn write(&self, buf: &[u8]) -> AlienResult<usize>;
-    fn read_at(&self, _offset: u64, _buf: &mut [u8]) -> AlienResult<usize> {
+    fn read(&self, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)>;
+    fn write(&self, buf: &RRefVec<u8>) -> AlienResult<usize>;
+    fn read_at(&self, _offset: u64, _buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
         Err(LinuxErrno::ENOSYS)
     }
-    fn write_at(&self, _offset: u64, _buf: &[u8]) -> AlienResult<usize> {
+    fn write_at(&self, _offset: u64, _buf: &RRefVec<u8>) -> AlienResult<usize> {
         Err(LinuxErrno::ENOSYS)
     }
     fn flush(&self) -> AlienResult<()> {
@@ -127,16 +128,16 @@ pub trait File: DowncastSync + Debug {
 impl_downcast!(sync  File);
 
 impl File for KernelFile {
-    fn read(&self, buf: &mut [u8]) -> AlienResult<usize> {
+    fn read(&self, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
         if buf.is_empty() {
-            return Ok(0);
+            return Ok((buf, 0));
         }
         let pos = self.meta.lock().pos;
-        let read = self.read_at(pos, buf)?;
+        let (buf, read) = self.read_at(pos, buf)?;
         self.meta.lock().pos += read as u64;
-        Ok(read)
+        Ok((buf, read))
     }
-    fn write(&self, buf: &[u8]) -> AlienResult<usize> {
+    fn write(&self, buf: &RRefVec<u8>) -> AlienResult<usize> {
         if buf.is_empty() {
             return Ok(0);
         }
@@ -145,20 +146,20 @@ impl File for KernelFile {
         self.meta.lock().pos += write as u64;
         Ok(write)
     }
-    fn read_at(&self, offset: u64, buf: &mut [u8]) -> AlienResult<usize> {
+    fn read_at(&self, offset: u64, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
         if buf.is_empty() {
-            return Ok(0);
+            return Ok((buf, 0));
         }
         let open_flag = self.meta.lock().open_flag;
         if !open_flag.contains(OpenFlags::O_RDONLY) && !open_flag.contains(OpenFlags::O_RDWR) {
             return Err(LinuxErrno::EPERM);
         }
         let inode = self.dentry.inode()?;
-        let read = inode.read_at(offset, buf)?;
-        Ok(read)
+        let res = inode.read_at(offset, buf)?;
+        Ok(res)
     }
 
-    fn write_at(&self, offset: u64, buf: &[u8]) -> AlienResult<usize> {
+    fn write_at(&self, offset: u64, buf: &RRefVec<u8>) -> AlienResult<usize> {
         if buf.is_empty() {
             return Ok(0);
         }

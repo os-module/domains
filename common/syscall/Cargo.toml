@@ -11,6 +11,6 @@ interface = { path = "../../../domain-lib/interface"  }
 rref = { path = "../../../domain-lib/rref"  }
 
 pod = { git = "https://github.com/asterinas/pod", rev = "d7dba56" }
-vfscore = { git = "https://github.com/os-module/rvfs.git", features = ["linux_error"] }
+vfscore = { path = "../../../rvfs-ref/vfscore-ref", package = "vfscore-ref" , features = ["linux_error"] }
 bit_field = "0.10"
 log = "0"

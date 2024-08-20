@@ -10,8 +10,8 @@ basic = { path = "../../../domain-lib/basic"  }
 rref = { path = "../../../domain-lib/rref"  }
 interface = { path = "../../../domain-lib/interface"  }
 
-vfscore = { git = "https://github.com/os-module/rvfs.git", features = ["linux_error"] }
-unifs = { git = "https://github.com/os-module/rvfs.git" }
+vfscore = { path = "../../../rvfs-ref/vfscore-ref", package = "vfscore-ref" , features = ["linux_error"] }
+unifs = { path = "../../../rvfs-ref/unifs-ref", package = "unifs-ref" }
 
 downcast-rs = { version = "1.2.0", default-features = false }
 cpio_reader = { version = "0.1.1" }

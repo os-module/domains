@@ -1,8 +1,9 @@
 use alloc::sync::Arc;
 
 use basic::{
+    config::CLOCK_FREQ,
     constants::time::{ClockId, TimeSpec, TimeVal},
-    time::TimeNow,
+    time::{read_timer, TimeNow},
     AlienError, AlienResult,
 };
 use interface::TaskDomain;
@@ -16,10 +17,10 @@ pub fn sys_clock_gettime(
     let id = ClockId::try_from(clk_id).map_err(|_| AlienError::EINVAL)?;
     match id {
         ClockId::Monotonic | ClockId::Realtime | ClockId::ProcessCputimeId => {
-            let time_ms = basic::time::read_time_ms();
+            let time = read_timer();
             let time = TimeSpec {
-                tv_sec: (time_ms / 1000) as usize,
-                tv_nsec: ((time_ms % 1000) * 1_000_000) as usize,
+                tv_sec: time / CLOCK_FREQ,
+                tv_nsec: (time % CLOCK_FREQ) * 1000_000_000 / CLOCK_FREQ,
             };
             task_domain.copy_to_user(tp, time.as_bytes())?;
             Ok(0)

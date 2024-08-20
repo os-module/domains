@@ -12,6 +12,7 @@ use basic::{
     AlienError, AlienResult,
 };
 use log::debug;
+use rref::RRefVec;
 use vfscore::{
     dentry::VfsDentry,
     error::VfsError,
@@ -49,22 +50,22 @@ impl PipeFile {
 }
 
 impl File for PipeFile {
-    fn read(&self, buf: &mut [u8]) -> AlienResult<usize> {
+    fn read(&self, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
         if buf.is_empty() {
-            return Ok(0);
+            return Ok((buf, 0));
         }
         self.inode_copy.read_at(0, buf).map_err(|e| e.into())
     }
-    fn write(&self, buf: &[u8]) -> AlienResult<usize> {
+    fn write(&self, buf: &RRefVec<u8>) -> AlienResult<usize> {
         if buf.is_empty() {
             return Ok(0);
         }
         self.inode_copy.write_at(0, buf).map_err(|e| e.into())
     }
-    fn read_at(&self, _offset: u64, buf: &mut [u8]) -> AlienResult<usize> {
+    fn read_at(&self, _offset: u64, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
         self.read(buf)
     }
-    fn write_at(&self, _offset: u64, buf: &[u8]) -> AlienResult<usize> {
+    fn write_at(&self, _offset: u64, buf: &RRefVec<u8>) -> AlienResult<usize> {
         self.write(buf)
     }
 
@@ -220,7 +221,7 @@ impl PipeInode {
 }
 
 impl VfsFile for PipeInode {
-    fn read_at(&self, _offset: u64, user_buf: &mut [u8]) -> VfsResult<usize> {
+    fn read_at(&self, _offset: u64, mut user_buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
         debug!("pipe_read: user_buf's len {:?}", user_buf.len());
         let mut count = 0;
         loop {
@@ -239,14 +240,14 @@ impl VfsFile for PipeInode {
                 }
             } else {
                 let min = core::cmp::min(available, user_buf.len() - count);
-                count += buf.read(&mut user_buf[count..count + min]);
+                count += buf.read(&mut user_buf.as_mut_slice()[count..count + min]);
                 break;
             }
         }
         debug!("pipe_read: return count:{}", count);
-        Ok(count)
+        Ok((user_buf, count))
     }
-    fn write_at(&self, _offset: u64, user_buf: &[u8]) -> VfsResult<usize> {
+    fn write_at(&self, _offset: u64, user_buf: &RRefVec<u8>) -> VfsResult<usize> {
         debug!("pipe_write: {:?}", user_buf.len());
         let mut count = 0;
         loop {
@@ -264,7 +265,7 @@ impl VfsFile for PipeInode {
             } else {
                 let min = core::cmp::min(available, user_buf.len() - count);
                 debug!("pipe_write: min:{}, count:{}", min, count);
-                count += buf.write(&user_buf[count..count + min]);
+                count += buf.write(&user_buf.as_slice()[count..count + min]);
                 break;
             }
         }
@@ -303,7 +304,7 @@ impl VfsInode for PipeInode {
         VfsNodePerm::empty()
     }
 
-    fn readlink(&self, _buf: &mut [u8]) -> VfsResult<usize> {
+    fn readlink(&self, _buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
         Err(VfsError::NoSys)
     }
 

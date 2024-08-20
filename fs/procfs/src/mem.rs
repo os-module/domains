@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 use core::cmp::min;
 
+use rref::RRefVec;
 use vfscore::{
     error::VfsError,
     file::VfsFile,
@@ -13,10 +14,10 @@ use vfscore::{
 pub struct MemInfo;
 
 impl VfsFile for MemInfo {
-    fn read_at(&self, offset: u64, buf: &mut [u8]) -> VfsResult<usize> {
+    fn read_at(&self, offset: u64, mut buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
         let min_len = min(buf.len(), MEMINFO.as_bytes().len() - offset as usize);
-        buf[..min_len].copy_from_slice(&MEMINFO.as_bytes()[..min_len]);
-        Ok(min_len)
+        buf.as_mut_slice()[..min_len].copy_from_slice(&MEMINFO.as_bytes()[..min_len]);
+        Ok((buf, min_len))
     }
 }
 

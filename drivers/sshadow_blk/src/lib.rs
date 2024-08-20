@@ -16,7 +16,7 @@ use basic::{
 };
 use interface::*;
 use log::error;
-use rref::RRef;
+use rref::{RRef, RRefVec};
 
 #[derive(Debug)]
 pub struct ShadowBlockDomainImpl {
@@ -62,7 +62,7 @@ impl ShadowBlockDomain for ShadowBlockDomainImpl {
         Ok(())
     }
 
-    fn read_block(&self, block: u32, data: RRef<[u8; 512]>) -> AlienResult<RRef<[u8; 512]>> {
+    fn read_block(&self, block: u32, data: RRefVec<u8>) -> AlienResult<RRefVec<u8>> {
         static FLAG: AtomicBool = AtomicBool::new(false);
         if !FLAG.load(core::sync::atomic::Ordering::Relaxed) {
             println_color!(34, "<SShadowBlockDomainImpl Mask> read block: {}", block);
@@ -78,14 +78,14 @@ impl ShadowBlockDomain for ShadowBlockDomainImpl {
                 // try reread block
                 basic::checkout_shared_data().unwrap();
                 println_color!(31, "try reread block");
-                data = RRef::new([0u8; 512]);
+                data = RRefVec::<u8>::new_uninit(512);
                 blk.read_block(block, data)
             }
             Err(e) => Err(e),
         }
     }
 
-    fn write_block(&self, block: u32, data: &RRef<[u8; 512]>) -> AlienResult<usize> {
+    fn write_block(&self, block: u32, data: &RRefVec<u8>) -> AlienResult<usize> {
         self.blk.get_must().write_block(block, data)
     }
 

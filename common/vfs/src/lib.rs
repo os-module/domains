@@ -176,31 +176,40 @@ impl VfsDomain for VfsDomainImpl {
         &self,
         inode: InodeID,
         offset: u64,
-        mut buf: RRefVec<u8>,
+        buf: RRefVec<u8>,
     ) -> AlienResult<(RRefVec<u8>, usize)> {
         let file = get_file(inode).unwrap();
-        let res = file.read_at(offset, buf.as_mut_slice())?;
-        Ok((buf, res))
+        let res = file.read_at(offset, buf)?;
+        Ok(res)
     }
-    fn vfs_read(&self, inode: InodeID, mut buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn vfs_read(&self, inode: InodeID, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
         let file = get_file(inode).unwrap();
-        let res = file.read(buf.as_mut_slice())?;
-        Ok((buf, res))
+        let res = file.read(buf)?;
+        Ok(res)
     }
     fn vfs_write_at(
         &self,
         inode: InodeID,
         offset: u64,
-        buf: RRefVec<u8>,
-    ) -> AlienResult<(RRefVec<u8>, usize)> {
+        buf: &RRefVec<u8>,
+        _w: usize,
+    ) -> AlienResult<usize> {
         let file = get_file(inode).unwrap();
-        let res = file.write_at(offset, buf.as_slice())?;
-        Ok((buf, res))
+        let res = file.write_at(offset, &buf)?;
+        Ok(res)
     }
+
     fn vfs_write(&self, inode: InodeID, buf: &RRefVec<u8>, w_len: usize) -> AlienResult<usize> {
         let file = get_file(inode).unwrap();
-        let res = file.write(&buf.as_slice()[..w_len])?;
-        Ok(res)
+        if buf.len() != w_len {
+            println_color!(31, "vfs_write: buf.len() != w_len");
+            let buf = RRefVec::from_slice(&buf.as_slice()[..w_len]);
+            let res = file.write(&buf)?;
+            Ok(res)
+        } else {
+            let res = file.write(buf)?;
+            Ok(res)
+        }
     }
     fn vfs_flush(&self, inode: InodeID) -> AlienResult<()> {
         let file = get_file(inode).unwrap();

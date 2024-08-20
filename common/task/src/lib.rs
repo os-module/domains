@@ -61,15 +61,11 @@ impl TaskDomain for TaskDomainImpl {
         Ok(())
     }
 
-    fn trap_frame_virt_addr(&self) -> AlienResult<usize> {
+    fn satp_with_trap_frame_virt_addr(&self) -> AlienResult<(usize, usize)> {
         let task = current_task().unwrap();
         let addr = task.trap_frame_virt_ptr();
-        Ok(addr.as_usize())
-    }
-
-    fn current_task_satp(&self) -> AlienResult<usize> {
-        let task = current_task().unwrap();
-        Ok(task.token())
+        let token = task.token();
+        Ok((token, addr.as_usize()))
     }
 
     fn trap_frame_phy_addr(&self) -> AlienResult<usize> {

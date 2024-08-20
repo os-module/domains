@@ -190,6 +190,7 @@ pub fn sys_recvfrom(
     let inode_id = task_domain.get_fd(fd)?;
     let socket_id = vfs_domain.socket_id(inode_id)?;
 
+    // todo! RRef::new(SocketArgTuple {} may leak memory
     let remote_addr = RRef::new(SocketAddrIn::default());
     let mut tmp_arg_tuple = RRef::new(SocketArgTuple {
         buf: RRefVec::new(0, len),
@@ -240,7 +241,7 @@ pub fn sys_sendto(
     );
     let inode_id = task_domain.get_fd(fd)?;
     let socket_id = vfs_domain.socket_id(inode_id)?;
-    let mut data = RRefVec::new(0, len);
+    let mut data = RRefVec::new_uninit(len);
     task_domain.copy_from_user(buf, data.as_mut_slice())?;
 
     let remote_addr = if addr != 0 {

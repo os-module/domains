@@ -18,7 +18,7 @@ use basic::{
     AlienResult,
 };
 use interface::{define_unwind_for_BlkDeviceDomain, Basic, BlkDeviceDomain, DeviceBase};
-use rref::RRef;
+use rref::{RRef, RRefVec};
 use virtio_drivers::{device::block::VirtIOBlk, transport::mmio::MmioTransport};
 use virtio_mmio_common::{HalImpl, SafeIORW};
 
@@ -62,7 +62,7 @@ impl BlkDeviceDomain for BlkDomain {
         self.blk.call_once(|| Mutex::new(blk));
         Ok(())
     }
-    fn read_block(&self, block: u32, mut data: RRef<[u8; 512]>) -> AlienResult<RRef<[u8; 512]>> {
+    fn read_block(&self, block: u32, mut data: RRefVec<u8>) -> AlienResult<RRefVec<u8>> {
         #[cfg(feature = "crash")]
         if basic::blk_crash_trick() {
             panic!("blk crash trick");
@@ -74,11 +74,11 @@ impl BlkDeviceDomain for BlkDomain {
             .expect("failed to read block");
         Ok(data)
     }
-    fn write_block(&self, block: u32, data: &RRef<[u8; 512]>) -> AlienResult<usize> {
+    fn write_block(&self, block: u32, data: &RRefVec<u8>) -> AlienResult<usize> {
         self.blk
             .get_must()
             .lock()
-            .write_blocks(block as _, data.as_ref())
+            .write_blocks(block as _, data.as_slice())
             .expect("failed to write block");
         Ok(data.len())
     }

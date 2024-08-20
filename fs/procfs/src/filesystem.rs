@@ -1,6 +1,7 @@
 use alloc::{string::String, sync::Arc, vec, vec::Vec};
 use core::cmp::min;
 
+use rref::RRefVec;
 use vfscore::{
     error::VfsError,
     file::VfsFile,
@@ -44,11 +45,11 @@ impl SystemSupportFS {
 }
 
 impl VfsFile for SystemSupportFS {
-    fn read_at(&self, offset: u64, buf: &mut [u8]) -> VfsResult<usize> {
+    fn read_at(&self, offset: u64, mut buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
         let info = self.serialize();
         let min_len = min(buf.len(), info.as_bytes().len() - offset as usize);
-        buf[..min_len].copy_from_slice(&info.as_bytes()[..min_len]);
-        Ok(min_len)
+        buf.as_mut_slice()[..min_len].copy_from_slice(&info.as_bytes()[..min_len]);
+        Ok((buf, min_len))
     }
 }
 
