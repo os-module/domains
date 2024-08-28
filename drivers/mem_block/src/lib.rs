@@ -6,7 +6,7 @@ use core::{cmp::min, ops::Range};
 
 use basic::{io::SafeIORegion, println, sync::Mutex, AlienError, AlienResult};
 use interface::{define_unwind_for_BlkDeviceDomain, Basic, BlkDeviceDomain, DeviceBase};
-use rref::{RRef, RRefVec};
+use rref::RRefVec;
 
 #[derive(Debug)]
 pub struct MemoryImg {
