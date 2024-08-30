@@ -86,7 +86,7 @@ impl BlkDeviceDomain for MemoryImg {
         self.write_blocks(block as _, data.as_slice())
     }
     fn get_capacity(&self) -> AlienResult<u64> {
-        Ok(self.data.lock().size() as u64)
+        Ok(self.data.lock().size() as u64 / 512)
     }
     fn flush(&self) -> AlienResult<()> {
         Ok(())

@@ -13,3 +13,12 @@ pub fn sys_prlimit64(
     PrLimitResType::try_from(resource).map_err(|_| AlienError::EINVAL)?;
     task_domain.do_prlimit(pid, resource, new_limit, old_limit)
 }
+pub fn sys_madvise(
+    _task_domain: &Arc<dyn TaskDomain>,
+    _addr: usize,
+    _len: usize,
+    _advice: usize,
+) -> AlienResult<isize> {
+    // task_domain.do_madvise(addr, len, advice)
+    Ok(0)
+}

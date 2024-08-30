@@ -379,6 +379,7 @@ impl SysCallDomain for SysCallDomainImpl {
             SYSCALL_MPROTECT => sys_mprotect(&self.task_domain, args[0], args[1], args[2]),
             SYSCALL_WAIT4 => sys_wait4(&self.task_domain, args[0], args[1], args[2], args[3]),
             SYSCALL_PRLIMIT => sys_prlimit64(&self.task_domain, args[0], args[1], args[2], args[3]),
+            SYSCALL_MADVISE => sys_madvise(&self.task_domain, args[0], args[1], args[2]),
             278 => sys_random(&self.task_domain, args[0], args[1], args[2]),
             888 => sys_load_domain(
                 &self.task_domain,
