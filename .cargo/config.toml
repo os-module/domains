@@ -1,2 +1,2 @@
 [alias]
-domain = "run -p xtask --"
+domain = "run -p xtask --release --"

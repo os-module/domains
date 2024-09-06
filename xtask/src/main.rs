@@ -44,7 +44,7 @@ fn main() {
         }
         Some(Commands::BuildAll { log }) => {
             println!("Building all domain projects, LOG: {log}");
-            subcommand::build::build_all(log);
+            subcommand::build::build_all(log.to_string());
         }
         Some(Commands::Build { name, log }) => {
             println!("Building domain project: {}, LOG: {}", name, log);

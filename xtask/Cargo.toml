@@ -10,3 +10,4 @@ clap = { version = "4", features = ["derive"] }
 fs_extra = "1.3.0"
 toml = "0.8.12"
 serde = { version = "1",features = ["derive"] }
+rayon = "1.10.0"

@@ -77,28 +77,28 @@ pub fn sys_read(
     len: usize,
 ) -> AlienResult<isize> {
     info!("<sys_read> fd: {:?} buf: {:#x} len: {:?}", fd, buf, len);
-    let now = read_time_us();
+    // let now = read_time_us();
     let file = task_domain.get_fd(fd)?;
     if len == 0 {
         return Ok(0);
     }
-    let get_file_time = read_time_us();
+    // let get_file_time = read_time_us();
     // todo!(if RRefVec.len is 0, talc will panic)
     let mut tmp_buf = RRefVec::<u8>::new_uninit(len);
     let r;
     (tmp_buf, r) = vfs.vfs_read(file, tmp_buf)?;
-    let read_file_time = read_time_us();
+    // let read_file_time = read_time_us();
     task_domain.copy_to_user(buf, &tmp_buf.as_slice()[..r])?;
-    let copy_to_user_time = read_time_us();
-    if len == 4096 {
-        println_color!(
-            31,
-            "sys_read: get_file_time: {}us, read_file_time: {}us, copy_to_user_time: {}us",
-            get_file_time - now,
-            read_file_time - get_file_time,
-            copy_to_user_time - read_file_time
-        );
-    }
+    // let copy_to_user_time = read_time_us();
+    // if len == 4096 {
+    //     println_color!(
+    //         31,
+    //         "sys_read: get_file_time: {}us, read_file_time: {}us, copy_to_user_time: {}us",
+    //         get_file_time - now,
+    //         read_file_time - get_file_time,
+    //         copy_to_user_time - read_file_time
+    //     );
+    // }
     Ok(r as isize)
 }
 

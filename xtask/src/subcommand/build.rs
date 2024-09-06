@@ -30,11 +30,11 @@ pub fn build_single(name: &str, log: &str) {
     }
     let init_members = config.domains.get("init_members").unwrap();
     if init_members.contains(&r_name.to_string()) {
-        build_domain(name, log, "init");
+        build_domain(name, log.to_string(), "init");
     } else {
         let disk_members = config.domains.get("disk_members").unwrap();
         if disk_members.contains(&r_name.to_string()) {
-            build_domain(name, log, "disk");
+            build_domain(name, log.to_string(), "disk");
         } else {
             println!(
                 "Domain [{}] is not in the init or disk members list, skip building",
@@ -44,7 +44,7 @@ pub fn build_single(name: &str, log: &str) {
     }
 }
 
-pub fn build_domain(name: &str, log: &str, dir: &str) {
+pub fn build_domain(name: &str, log: String, dir: &str) {
     // change the directory to the domain project
     // run cargo build
     let generated_path = Path::new("./generated");
@@ -72,8 +72,13 @@ struct Config {
     domains: BTreeMap<String, Vec<String>>,
 }
 
-pub fn build_all(log: &str) {
+pub fn build_all(log: String) {
     check_dir_exist();
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(16)
+        .build()
+        .unwrap();
+
     let domain_list = fs::read_to_string("./domain-list.toml").unwrap();
     let config: Config = toml::from_str(&domain_list).unwrap();
     std::process::Command::new("mkdir")
@@ -92,7 +97,8 @@ pub fn build_all(log: &str) {
             continue;
         }
         let build_name = format!("g{domain_name}");
-        build_domain(&build_name, log, "init");
+        let value = log.to_string();
+        pool.spawn(move || build_domain(&build_name, value, "init"));
     }
     let disk_members = config.domains.get("disk_members").unwrap();
     if !disk_members.is_empty() {
@@ -109,7 +115,9 @@ pub fn build_all(log: &str) {
                 continue;
             }
             let build_name = format!("g{domain_name}");
-            build_domain(&build_name, log, "disk");
+            // build_domain(&build_name, log, "disk");
+            let value = log.to_string();
+            pool.spawn(move || build_domain(&build_name, value, "disk"));
         }
     }
 }
