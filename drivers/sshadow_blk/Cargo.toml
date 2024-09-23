@@ -1,11 +1,7 @@
-[package]
-name = "sshadow_blk"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+    "sshadow_blk",
+	"gsshadow_blk",
+]
 
-
-[dependencies]
-interface = { path = "../../../domain-lib/interface"  }
-rref = { path = "../../../domain-lib/rref"  }
-basic = { path = "../../../domain-lib/basic"  }
-log = "0"
+resolver = "2"

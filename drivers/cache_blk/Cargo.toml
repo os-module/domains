@@ -1,13 +1,7 @@
-[package]
-name = "cache_blk"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+    "cache_blk",
+	"gcache_blk",
+]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-interface = { path = "../../../domain-lib/interface"  }
-rref = { path = "../../../domain-lib/rref"  }
-basic = { path = "../../../domain-lib/basic"  }
-log = "0"
-lru = "0"
+resolver = "2"

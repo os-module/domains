@@ -1,20 +1,7 @@
-[package]
-name = "vf2_sd"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+    "vf2_sd",
+	"gvf2_sd",
+]
 
-
-[dependencies]
-interface = { path = "../../../domain-lib/interface"  }
-rref = { path = "../../../domain-lib/rref"  }
-basic = { path = "../../../domain-lib/basic" }
-visionfive2-sd = { git = "https://github.com/os-module/visionfive2-sd.git" }
-#visionfive2-sd = { path = "../../../../os-modules/visionfive2-sd" }
-fatfs = { git = "https://github.com/os-module/rust-fatfs.git", default-features = false, features = [
-    "alloc",
-    "lfn",
-], optional = true }
-
-
-[features]
-fs_test = ["dep:fatfs"]
+resolver = "2"

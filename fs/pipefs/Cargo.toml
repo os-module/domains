@@ -1,15 +1,7 @@
-[package]
-name = "pipefs"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+    "pipefs",
+	"gpipefs",
+]
 
-
-[dependencies]
-interface = { path = "../../../domain-lib/interface"  }
-rref = { path = "../../../domain-lib/rref"  }
-basic = { path = "../../../domain-lib/basic"  }
-
-vfscore = { path = "../../../rvfs-ref/vfscore-ref", package = "vfscore-ref" , features = ["linux_error"] }
-dynfs = { path = "../../../rvfs-ref/dynfs-ref", package = "dynfs-ref" }
-generic = { path = "../generic" }
-log = "0"
+resolver = "2"

@@ -1,13 +1,7 @@
-[package]
-name = "random_scheduler"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+	"random_scheduler",
+	"grandom_scheduler",
+]
 
-
-[dependencies]
-interface = { path = "../../../domain-lib/interface"  }
-rref = { path = "../../../domain-lib/rref"  }
-basic = { path = "../../../domain-lib/basic"  }
-task_meta = { path = "../../../domain-lib/task_meta"  }
-common_scheduler = { path = "../common_scheduler" }
-storage = { path = "../../../domain-lib/storage", features = ["impl"] }
+resolver = "2"

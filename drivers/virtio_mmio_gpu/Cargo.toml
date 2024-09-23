@@ -1,15 +1,7 @@
-[package]
-name = "virtio_mmio_gpu"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+    "virtio_mmio_gpu",
+	"gvirtio_mmio_gpu",
+]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-interface = { path = "../../../domain-lib/interface"  }
-rref = { path = "../../../domain-lib/rref"  }
-basic = { path = "../../../domain-lib/basic"  }
-
-virtio-drivers = { git = "https://github.com/os-module/safe-virtio-drivers.git" }
-virtio_mmio_common = { path = "../virtio_mmio_common" }
-log = "0"
+resolver = "2"

@@ -1,13 +1,7 @@
-[package]
-name = "uart16550"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+    "uart16550",
+	"guart16550",
+]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-interface = { path = "../../../domain-lib/interface"  }
-rref = { path = "../../../domain-lib/rref"  }
-basic = { path = "../../../domain-lib/basic"  }
-
-raw_uart16550 = { git = "https://github.com/os-module/uart16550", package = "uart16550" }
+resolver = "2"
