@@ -15,8 +15,7 @@ storage = { path = "../../../../domain-lib/storage", features = ["impl"] }
 
 sshadow_blk = { path = "../sshadow_blk" }
 
-unwind = { path = "../../../../base/unwind", optional = true }
 
 [features]
 default = ["rust-unwind"]
-rust-unwind = ["dep:unwind"]
+rust-unwind = []

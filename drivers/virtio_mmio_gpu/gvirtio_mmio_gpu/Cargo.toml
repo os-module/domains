@@ -15,8 +15,7 @@ storage = { path = "../../../../domain-lib/storage", features = ["impl"] }
 
 virtio_mmio_gpu = { path = "../virtio_mmio_gpu" }
 
-unwind = { path = "../../../../base/unwind", optional = true }
 
 [features]
 default = ["rust-unwind"]
-rust-unwind = ["dep:unwind"]
+rust-unwind = []

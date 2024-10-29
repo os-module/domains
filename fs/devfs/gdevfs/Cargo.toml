@@ -14,8 +14,7 @@ interface = { path = "../../../../domain-lib/interface",  features = ["domain"] 
 storage = { path = "../../../../domain-lib/storage", features = ["impl"] }
 devfs = { path = "../devfs" }
 
-unwind = { path = "../../../../base/unwind", optional = true }
 
 [features]
 default = ["rust-unwind"]
-rust-unwind = ["dep:unwind"]
+rust-unwind = []

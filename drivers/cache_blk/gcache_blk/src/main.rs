@@ -1,4 +1,3 @@
-#![feature(panic_info_message)]
 #![no_std]
 #![no_main]
 #![feature(lang_items)]
