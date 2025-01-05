@@ -34,7 +34,7 @@ impl Basic for CommonSchedulerDomain {
 
 impl SchedulerDomain for CommonSchedulerDomain {
     fn init(&self) -> AlienResult<()> {
-        println!("SchedulerDomain init, name: {}", self.name);
+        // println!("SchedulerDomain init, name: {}", self.name);
         Ok(())
     }
 

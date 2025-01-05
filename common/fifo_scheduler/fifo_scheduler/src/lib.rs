@@ -13,6 +13,7 @@ use interface::SchedulerDomain;
 use crate::scheduler::CustomFiFoScheduler;
 
 pub fn main() -> Box<dyn SchedulerDomain> {
+    basic::println!("Fifo Scheduler");
     Box::new(UnwindWrap::new(CommonSchedulerDomain::new(Box::new(
         CustomFiFoScheduler::new(),
     ))))
