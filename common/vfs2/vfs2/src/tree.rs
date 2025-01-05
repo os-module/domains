@@ -143,14 +143,14 @@ fn init_filesystem_before(initrd: &[u8]) -> VfsResult<Arc<dyn VfsDentry>> {
 }
 
 fn init_filesystem_after() -> VfsResult<Arc<dyn VfsDentry>> {
-    println_color!(31, "Init filesystem after");
+    // println_color!(31, "Init filesystem after");
     let ramfs_root = common_load_or_create_fs(false, "ramfs-1", b"/", true);
     SYSTEM_ROOT_FS.call_once(|| ramfs_root.clone());
     let pipefs_root = common_load_or_create_fs(false, "pipefs", b"", true);
     pipefs::init_pipefs(&pipefs_root);
     {
         // recover the file descriptor
-        println!("recover the file descriptor");
+        // println!("recover the file descriptor");
         let mut map = VFS_MAP.write();
         let map_shadow = VFS_MAP_SHADOW.lock();
         for (id, _) in map_shadow.iter() {
@@ -161,7 +161,7 @@ fn init_filesystem_after() -> VfsResult<Arc<dyn VfsDentry>> {
             let dentry = {
                 let fs_domain_ident = &meta.lock().fs_domain_ident;
                 let ident = core::str::from_utf8(fs_domain_ident.as_slice()).unwrap();
-                println!("recover file descriptor: {} in fs domain {}", key, ident);
+                // println!("recover file descriptor: {} in fs domain {}", key, ident);
                 RootShimDentry::new(
                     fs_domain,
                     real_inode_id,
@@ -182,9 +182,9 @@ pub fn init_filesystem(initrd: &[u8], is_init_done: bool) -> VfsResult<()> {
     } else {
         init_filesystem_before(initrd)?
     };
-    println!("Vfs Tree:");
-    vfscore::path::print_fs_tree(&mut VfsOutPut, ramfs_root, "".to_string(), false).unwrap();
-    println!("Init filesystem success");
+    // println!("Vfs Tree:");
+    // vfscore::path::print_fs_tree(&mut VfsOutPut, ramfs_root, "".to_string(), false).unwrap();
+    // println!("Init filesystem success");
     Ok(())
 }
 

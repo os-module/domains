@@ -117,7 +117,7 @@ impl VfsDomain for VfsDomainImpl {
             _ => panic!("net_stack domain not found"),
         };
         VFS_INIT.store(true, core::sync::atomic::Ordering::SeqCst);
-        println!("vfs init success");
+        // println!("vfs init success");
         Ok(())
     }
 
