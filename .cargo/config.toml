@@ -1,3 +1,6 @@
+[alias]
+domain = "run -p domain --"
+
 [target.riscv64]
 rustflags = [
     "-Clink-arg=-T../../domain.ld",
@@ -6,9 +9,6 @@ rustflags = [
 ]
 linker = "riscv64-linux-gnu-gcc"
 
-[unstable]
-build-std = ["core", "alloc"]
-build-std-features = ["compiler-builtins-mem"]
 
 [profile.release]
 lto = true
