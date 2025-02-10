@@ -9,7 +9,7 @@ use basic::{
 };
 use interface::{TaskDomain, VfsDomain};
 use pod::Pod;
-use rref::RRef;
+use shared_heap::DBox;
 
 /// See https://man7.org/linux/man-pages/man2/epoll_create1.2.html
 pub fn sys_poll_createl(
@@ -45,7 +45,7 @@ pub fn sys_poll_ctl(
         data: event.data,
     };
     let inode = task_domain.get_fd(epfd)?;
-    vfs_domain.do_poll_ctl(inode, op as u32, fd, RRef::new(event))?;
+    vfs_domain.do_poll_ctl(inode, op as u32, fd, DBox::new(event))?;
     Ok(0)
 }
 

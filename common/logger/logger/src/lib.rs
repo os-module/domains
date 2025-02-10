@@ -6,14 +6,14 @@ use alloc::boxed::Box;
 use basic::{println, AlienResult};
 use interface::{define_unwind_for_LogDomain, Basic, Level, LevelFilter, LogDomain};
 use log::{Log, Metadata, Record};
-use rref::RRefVec;
+use shared_heap::DVec;
 
 #[derive(Debug)]
 pub struct Logger;
 
 impl Basic for Logger {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -26,7 +26,7 @@ impl LogDomain for Logger {
         Ok(())
     }
 
-    fn log(&self, level: Level, msg: &RRefVec<u8>) -> AlienResult<()> {
+    fn log(&self, level: Level, msg: &DVec<u8>) -> AlienResult<()> {
         let msg = core::str::from_utf8(msg.as_slice()).unwrap();
         let level = match level {
             Level::Error => log::Level::Error,

@@ -16,12 +16,12 @@ use interface::{
 };
 use log::info;
 use lru::LruCache;
-use rref::{RRef, RRefVec};
+use shared_heap::{DBox, DVec};
 
-struct PageCache(Vec<RRefVec<u8>>);
+struct PageCache(Vec<DVec<u8>>);
 
 impl PageCache {
-    pub fn get(&self, index: usize) -> &RRefVec<u8> {
+    pub fn get(&self, index: usize) -> &DVec<u8> {
         &self.0[index]
     }
 
@@ -86,7 +86,7 @@ impl GenericBlockDevice {
             let end_block = start_block + FRAME_SIZE / 512;
             let mut cache = Vec::with_capacity(4);
             for i in start_block..end_block {
-                let cache_slice = RRefVec::new_uninit(512);
+                let cache_slice = DVec::new_uninit(512);
                 let cache_slice = device.read_block(i as u32, cache_slice).unwrap();
                 cache.push(cache_slice);
             }
@@ -107,7 +107,7 @@ impl GenericBlockDevice {
 
 impl Basic for GenericBlockDevice {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -136,7 +136,7 @@ impl CacheBlkDeviceDomain for GenericBlockDevice {
         }
     }
 
-    fn read(&self, offset: u64, mut buf: RRefVec<u8>) -> AlienResult<RRefVec<u8>> {
+    fn read(&self, offset: u64, mut buf: DVec<u8>) -> AlienResult<DVec<u8>> {
         let mut page_id = offset as usize / FRAME_SIZE;
         let mut offset = offset as usize % FRAME_SIZE;
         let len = buf.len();
@@ -154,7 +154,7 @@ impl CacheBlkDeviceDomain for GenericBlockDevice {
         Ok(buf)
     }
 
-    fn write(&self, offset: u64, buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write(&self, offset: u64, buf: &DVec<u8>) -> AlienResult<usize> {
         let mut page_id = offset as usize / FRAME_SIZE;
         let mut offset = offset as usize % FRAME_SIZE;
         let len = buf.len();

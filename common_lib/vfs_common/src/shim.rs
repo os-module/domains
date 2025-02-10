@@ -8,7 +8,7 @@ use core::ffi::CStr;
 
 use basic::sync::{Mutex, Once, OnceGet};
 use interface::{DirEntryWrapper, DomainType, FsDomain, InodeID};
-use rref::{RRef, RRefVec};
+use shared_heap::{DBox, DVec};
 use vfscore::{
     dentry::VfsDentry,
     error::VfsError,
@@ -118,7 +118,7 @@ impl VfsDentry for RootShimDentry {
         if !self.name.lock().is_empty() {
             return self.name.lock().clone();
         }
-        let buf = RRefVec::new_uninit(32);
+        let buf = DVec::new_uninit(32);
         let (buf, l) = self.fs_domain.dentry_name(self.inode_id, buf).unwrap();
         let name = core::str::from_utf8(&buf.as_slice()[..l])
             .unwrap()
@@ -136,7 +136,7 @@ impl VfsDentry for RootShimDentry {
             .downcast_arc::<RootShimDentry>()
             .map_err(|_| VfsError::Invalid)
             .expect("sub_fs_root is not RootShimDentry");
-        let domain_ident = RRefVec::from_slice(&dentry.fs_domain_ident);
+        let domain_ident = DVec::from_slice(&dentry.fs_domain_ident);
         let mount_inode_id = dentry.inode_id;
         self.fs_domain
             .dentry_to_mount_point(self.inode_id, &domain_ident, mount_inode_id)
@@ -158,7 +158,7 @@ impl VfsDentry for RootShimDentry {
         if let Some(mount_point) = self.mount_point.lock().as_ref() {
             return Some(mount_point.clone());
         }
-        let domain_ident = RRefVec::new(0, 32);
+        let domain_ident = DVec::new(0, 32);
         let (mount_point, inode_id) = self
             .fs_domain
             .dentry_mount_point(self.inode_id, domain_ident)
@@ -198,7 +198,7 @@ impl VfsDentry for RootShimDentry {
         if let Some(dentry) = self.children.lock().get(path) {
             return Some(dentry.clone());
         }
-        let shared_path = RRefVec::from_slice(path.as_bytes());
+        let shared_path = DVec::from_slice(path.as_bytes());
         let inode_id = self
             .fs_domain
             .dentry_find(self.inode_id, &shared_path)
@@ -222,7 +222,7 @@ impl VfsDentry for RootShimDentry {
     }
 
     fn remove(&self, name: &str) -> Option<Arc<dyn VfsDentry>> {
-        let shared_name = RRefVec::from_slice(name.as_bytes());
+        let shared_name = DVec::from_slice(name.as_bytes());
         self.fs_domain
             .dentry_remove(self.inode_id, &shared_name)
             .unwrap();
@@ -252,7 +252,7 @@ impl VfsDentry for RootShimDentry {
             .downcast_arc::<RootShimDentry>()
             .map_err(|_| VfsError::Invalid)
             .expect("parent is not RootShimDentry");
-        let domain_ident = RRefVec::from_slice(&parent.fs_domain_ident);
+        let domain_ident = DVec::from_slice(&parent.fs_domain_ident);
         let parent_inode_id = parent.inode_id;
         self.fs_domain
             .dentry_set_parent(self.inode_id, &domain_ident, parent_inode_id)
@@ -265,7 +265,7 @@ impl VfsDentry for RootShimDentry {
         if !self.path.lock().is_empty() {
             return self.path.lock().clone();
         }
-        let buf = RRefVec::new_uninit(64);
+        let buf = DVec::new_uninit(64);
         let (buf, l) = self.fs_domain.dentry_path(self.inode_id, buf).unwrap();
         let path = core::str::from_utf8(&buf.as_slice()[..l])
             .unwrap()
@@ -317,18 +317,18 @@ impl FsShimInode {
 }
 
 impl VfsFile for FsShimInode {
-    fn read_at(&self, offset: u64, buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
+    fn read_at(&self, offset: u64, buf: DVec<u8>) -> VfsResult<(DVec<u8>, usize)> {
         let (shared_buf, len) = self.fs_domain.read_at(self.ino, offset, buf)?;
         Ok((shared_buf, len))
     }
-    fn write_at(&self, offset: u64, buf: &RRefVec<u8>) -> VfsResult<usize> {
+    fn write_at(&self, offset: u64, buf: &DVec<u8>) -> VfsResult<usize> {
         let len = self.fs_domain.write_at(self.ino, offset, buf)?;
         Ok(len)
     }
     fn readdir(&self, start_index: usize) -> VfsResult<Option<VfsDirEntry>> {
         // todo!(fix name len)
         // let shared_name = [0; 64];
-        let dir_entry = RRef::<DirEntryWrapper>::new_uninit();
+        let dir_entry = DBox::<DirEntryWrapper>::new_uninit();
         let dir_entry = self.fs_domain.readdir(self.ino, start_index, dir_entry)?;
         if dir_entry.name_len == 0 {
             Ok(None)
@@ -380,7 +380,7 @@ impl VfsInode for FsShimInode {
         perm: VfsNodePerm,
         rdev: Option<u64>,
     ) -> VfsResult<Arc<dyn VfsInode>> {
-        let shared_name = RRefVec::from_slice(name.as_bytes());
+        let shared_name = DVec::from_slice(name.as_bytes());
         let inode_id = self
             .fs_domain
             .create(self.ino, &shared_name, ty, perm, rdev)?;
@@ -388,7 +388,7 @@ impl VfsInode for FsShimInode {
         Ok(inode)
     }
     fn link(&self, name: &str, src: Arc<dyn VfsInode>) -> VfsResult<Arc<dyn VfsInode>> {
-        let shared_name = RRefVec::from_slice(name.as_bytes());
+        let shared_name = DVec::from_slice(name.as_bytes());
         let src = src
             .downcast_arc::<FsShimInode>()
             .map_err(|_| VfsError::Invalid)?;
@@ -397,13 +397,13 @@ impl VfsInode for FsShimInode {
         Ok(inode)
     }
     fn unlink(&self, name: &str) -> VfsResult<()> {
-        let shared_name = RRefVec::from_slice(name.as_bytes());
+        let shared_name = DVec::from_slice(name.as_bytes());
         self.fs_domain.unlink(self.ino, &shared_name)?;
         Ok(())
     }
     fn symlink(&self, name: &str, sy_name: &str) -> VfsResult<Arc<dyn VfsInode>> {
-        let shared_name = RRefVec::from_slice(name.as_bytes());
-        let shared_sy_name = RRefVec::from_slice(sy_name.as_bytes());
+        let shared_name = DVec::from_slice(name.as_bytes());
+        let shared_sy_name = DVec::from_slice(sy_name.as_bytes());
         let inode_id = self
             .fs_domain
             .symlink(self.ino, &shared_name, &shared_sy_name)?;
@@ -411,18 +411,18 @@ impl VfsInode for FsShimInode {
         Ok(inode)
     }
     fn lookup(&self, name: &str) -> VfsResult<Arc<dyn VfsInode>> {
-        let shared_name = RRefVec::from_slice(name.as_bytes());
+        let shared_name = DVec::from_slice(name.as_bytes());
         let inode_id = self.fs_domain.lookup(self.ino, &shared_name)?;
         let inode = Arc::new(self.clone_with_inode(inode_id));
         Ok(inode)
     }
 
     fn rmdir(&self, name: &str) -> VfsResult<()> {
-        let shared_name = RRefVec::from_slice(name.as_bytes());
+        let shared_name = DVec::from_slice(name.as_bytes());
         self.fs_domain.rmdir(self.ino, &shared_name)?;
         Ok(())
     }
-    fn readlink(&self, buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
+    fn readlink(&self, buf: DVec<u8>) -> VfsResult<(DVec<u8>, usize)> {
         let (shared_buf, len) = self.fs_domain.readlink(self.ino, buf)?;
         Ok((shared_buf, len))
     }
@@ -451,8 +451,8 @@ impl VfsInode for FsShimInode {
         new_name: &str,
         flag: VfsRenameFlag,
     ) -> VfsResult<()> {
-        let shared_old_name = RRefVec::from_slice(old_name.as_bytes());
-        let shared_new_name = RRefVec::from_slice(new_name.as_bytes());
+        let shared_old_name = DVec::from_slice(old_name.as_bytes());
+        let shared_new_name = DVec::from_slice(new_name.as_bytes());
         let new_parent = new_parent
             .downcast_arc::<FsShimInode>()
             .map_err(|_| VfsError::Invalid)?;
@@ -497,7 +497,7 @@ impl VfsSuperBlock for ShimSuperBlock {
     }
 
     fn stat_fs(&self) -> VfsResult<VfsFsStat> {
-        let fs_stat = RRef::<VfsFsStat>::new_uninit();
+        let fs_stat = DBox::<VfsFsStat>::new_uninit();
         let fs_stat = self.fs_domain.stat_fs(fs_stat)?;
         Ok(*fs_stat)
     }
@@ -545,7 +545,7 @@ impl VfsFsType for ShimFs {
     }
 
     fn fs_name(&self) -> String {
-        let buf = RRefVec::new_uninit(32);
+        let buf = DVec::new_uninit(32);
         let (buf, len) = self.fs_domain.fs_name(buf).unwrap();
         core::str::from_utf8(&buf.as_slice()[..len])
             .unwrap()

@@ -59,13 +59,13 @@ fn main() {
             println!("Creating new domain project: {}", name);
             subcommand::new::create_domain(name);
         }
-        Some(Commands::BuildAll { log,output }) => {
+        Some(Commands::BuildAll { log, output }) => {
             println!("Building all domain projects, LOG: {log}");
-            subcommand::build::build_all(log.to_string(),output);
+            subcommand::build::build_all(log.to_string(), output);
         }
-        Some(Commands::Build { name, log,output }) => {
+        Some(Commands::Build { name, log, output }) => {
             println!("Building domain project: {}, LOG: {}", name, log);
-            subcommand::build::build_single(name, log,output);
+            subcommand::build::build_single(name, log, output);
         }
         Some(Commands::Clean { name }) => {
             println!("Cleaning domain project: {}", name);

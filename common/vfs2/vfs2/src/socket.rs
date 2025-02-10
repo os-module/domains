@@ -7,7 +7,7 @@ use basic::{
     AlienError, AlienResult,
 };
 use interface::{NetDomain, SocketID};
-use rref::RRefVec;
+use shared_heap::DVec;
 use vfscore::{
     dentry::VfsDentry,
     error::VfsError,
@@ -65,7 +65,7 @@ impl SocketFile {
 }
 
 impl File for SocketFile {
-    fn read(&self, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn read(&self, buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         if buf.is_empty() {
             return Ok((buf, 0));
         }
@@ -74,7 +74,7 @@ impl File for SocketFile {
         *self.pos.lock() += read as u64;
         Ok((buf, read))
     }
-    fn write(&self, buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write(&self, buf: &DVec<u8>) -> AlienResult<usize> {
         if buf.is_empty() {
             return Ok(0);
         }
@@ -84,7 +84,7 @@ impl File for SocketFile {
         Ok(write)
     }
 
-    fn read_at(&self, offset: u64, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn read_at(&self, offset: u64, buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         if buf.is_empty() {
             return Ok((buf, 0));
         }
@@ -97,7 +97,7 @@ impl File for SocketFile {
         Ok((shared_buf, len))
     }
 
-    fn write_at(&self, offset: u64, buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write_at(&self, offset: u64, buf: &DVec<u8>) -> AlienResult<usize> {
         if buf.is_empty() {
             return Ok(0);
         }

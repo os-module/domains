@@ -9,7 +9,7 @@ use basic::{
 };
 use interface::{BufUartDomain, TaskDomain};
 use pod::Pod;
-use rref::RRefVec;
+use shared_heap::DVec;
 use vfscore::{
     error::VfsError,
     file::VfsFile,
@@ -49,7 +49,7 @@ impl UARTDevice {
 }
 
 impl VfsFile for UARTDevice {
-    fn read_at(&self, _offset: u64, mut _buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
+    fn read_at(&self, _offset: u64, mut _buf: DVec<u8>) -> VfsResult<(DVec<u8>, usize)> {
         let buf = _buf.as_mut_slice();
         // read util \r and transform to \n
         let mut read_count = 0;
@@ -79,7 +79,7 @@ impl VfsFile for UARTDevice {
         }
         Ok((_buf, read_count))
     }
-    fn write_at(&self, _offset: u64, buf: &RRefVec<u8>) -> VfsResult<usize> {
+    fn write_at(&self, _offset: u64, buf: &DVec<u8>) -> VfsResult<usize> {
         self.device.put_bytes(buf).unwrap();
         Ok(buf.len())
     }

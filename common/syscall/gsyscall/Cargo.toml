@@ -9,7 +9,7 @@ edition = "2021"
 corelib = { path = "../../../../domain-lib/corelib" }
 malloc = { path = "../../../../domain-lib/malloc" }
 basic = { path = "../../../../domain-lib/basic" }
-rref = { path = "../../../../domain-lib/rref" }
+shared_heap = { path = "../../../../domain-lib/shared_heap" }
 interface = { path = "../../../../domain-lib/interface",  features = ["domain"]  }
 storage = { path = "../../../../domain-lib/storage", features = ["impl"] }
 

@@ -9,7 +9,7 @@ use basic::{
     sync::Mutex,
     AlienError, AlienResult,
 };
-use rref::RRefVec;
+use shared_heap::DVec;
 use vfscore::{dentry::VfsDentry, inode::VfsInode, utils::VfsFileStat};
 
 use crate::kfile::File;
@@ -52,7 +52,7 @@ impl EventFdInode {
 }
 
 impl File for EventFdInode {
-    fn read(&self, mut buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn read(&self, mut buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         if buf.len() < 8 {
             return Err(AlienError::EINVAL);
         }
@@ -84,7 +84,7 @@ impl File for EventFdInode {
         buf.as_mut_slice()[..8].copy_from_slice(&val_bytes);
         Ok((buf, 8))
     }
-    fn write(&self, buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write(&self, buf: &DVec<u8>) -> AlienResult<usize> {
         if buf.len() < 8 {
             return Err(AlienError::EINVAL);
         }
@@ -116,10 +116,10 @@ impl File for EventFdInode {
         }
         Ok(8)
     }
-    fn read_at(&self, _offset: u64, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn read_at(&self, _offset: u64, buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         self.read(buf)
     }
-    fn write_at(&self, _offset: u64, buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write_at(&self, _offset: u64, buf: &DVec<u8>) -> AlienResult<usize> {
         self.write(buf)
     }
 

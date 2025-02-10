@@ -18,7 +18,7 @@ use interface::{
     ShadowBlockDomain,
 };
 use log::error;
-use rref::{RRef, RRefVec};
+use shared_heap::{DBox, DVec};
 
 #[derive(Debug)]
 pub struct ShadowBlockDomainImpl {
@@ -42,7 +42,7 @@ impl ShadowBlockDomainImpl {
 }
 impl Basic for ShadowBlockDomainImpl {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -64,7 +64,7 @@ impl ShadowBlockDomain for ShadowBlockDomainImpl {
     }
 
     // todo!(fix it if more than one thread read the same block at the same time)
-    fn read_block(&self, block: u32, data: RRefVec<u8>) -> AlienResult<RRefVec<u8>> {
+    fn read_block(&self, block: u32, data: DVec<u8>) -> AlienResult<DVec<u8>> {
         let blk = self.blk.get_must();
         let mut data = data;
         let res = blk.read_block(block, data);
@@ -75,14 +75,14 @@ impl ShadowBlockDomain for ShadowBlockDomainImpl {
                 // try reread block
                 basic::checkout_shared_data().unwrap();
                 println_color!(31, "try reread block");
-                data = RRefVec::<u8>::new_uninit(512);
+                data = DVec::<u8>::new_uninit(512);
                 blk.read_block(block, data)
             }
             Err(e) => Err(e),
         }
     }
 
-    fn write_block(&self, block: u32, data: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write_block(&self, block: u32, data: &DVec<u8>) -> AlienResult<usize> {
         self.blk.get_must().write_block(block, data)
     }
 

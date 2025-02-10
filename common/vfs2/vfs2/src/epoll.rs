@@ -8,7 +8,7 @@ use basic::{
     sync::{Mutex, MutexGuard},
     AlienError, AlienResult,
 };
-use rref::RRefVec;
+use shared_heap::DVec;
 use vfscore::{dentry::VfsDentry, inode::VfsInode, utils::VfsFileStat};
 
 use crate::kfile::File;
@@ -49,10 +49,10 @@ impl EpollFile {
 }
 
 impl File for EpollFile {
-    fn read(&self, _buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn read(&self, _buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         todo!()
     }
-    fn write(&self, _buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write(&self, _buf: &DVec<u8>) -> AlienResult<usize> {
         todo!()
     }
     fn seek(&self, _pos: SeekFrom) -> AlienResult<u64> {

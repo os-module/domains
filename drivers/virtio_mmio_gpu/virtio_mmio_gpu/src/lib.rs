@@ -12,7 +12,7 @@ use basic::{
     AlienResult,
 };
 use interface::{define_unwind_for_GpuDomain, Basic, DeviceBase, GpuDomain};
-use rref::RRefVec;
+use shared_heap::DVec;
 use virtio_drivers::{device::gpu::VirtIOGpu, transport::mmio::MmioTransport};
 use virtio_mmio_common::{HalImpl, SafeIORW};
 
@@ -44,7 +44,7 @@ impl GPUDomain {
 
 impl Basic for GPUDomain {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -81,7 +81,7 @@ impl GpuDomain for GPUDomain {
         Ok(())
     }
 
-    fn fill(&self, _offset: u32, _buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn fill(&self, _offset: u32, _buf: &DVec<u8>) -> AlienResult<usize> {
         todo!()
     }
 

@@ -27,7 +27,7 @@ impl Debug for InputDevDomain {
 
 impl Basic for InputDevDomain {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 impl DeviceBase for InputDevDomain {

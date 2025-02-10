@@ -3,7 +3,7 @@ use core::ffi::CStr;
 
 use basic::println;
 use interface::DomainType;
-use rref::RRefVec;
+use shared_heap::DVec;
 use vfscore::{dentry::VfsDentry, path::VfsPath};
 
 use crate::shim::RootShimDentry;
@@ -28,7 +28,7 @@ pub fn init_procfs(root_dt: &Arc<dyn VfsDentry>) {
     let name = Arc::new(Vec::from(name));
     let ramfs_root = match ramfs_domain {
         DomainType::FsDomain(ramfs) => {
-            let mp = RRefVec::from_slice(b"/proc/self");
+            let mp = DVec::from_slice(b"/proc/self");
             let root_inode_id = ramfs.mount(&mp, None).unwrap();
 
             RootShimDentry::new(ramfs, root_inode_id, name)

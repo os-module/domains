@@ -6,7 +6,7 @@ use alloc::{
 use core::cmp::min;
 
 use interface::DomainTypeRaw;
-use rref::RRefVec;
+use shared_heap::DVec;
 use vfscore::{
     error::VfsError,
     file::VfsFile,
@@ -229,7 +229,7 @@ impl DomainInfoFile {
 }
 
 impl VfsFile for DomainInfoFile {
-    fn read_at(&self, offset: u64, mut buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
+    fn read_at(&self, offset: u64, mut buf: DVec<u8>) -> VfsResult<(DVec<u8>, usize)> {
         let data = self.data();
         if offset as usize >= data.len() {
             return Ok((buf, 0));

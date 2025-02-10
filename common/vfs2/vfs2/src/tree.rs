@@ -3,7 +3,7 @@ use core::ffi::CStr;
 
 use basic::{constants::io::OpenFlags, println, println_color, sync::Mutex};
 use interface::*;
-use rref::{RRef, RRefVec};
+use shared_heap::{DBox, DVec};
 use spin::{Lazy, Once};
 use vfs_common::meta::KernelFileMeta;
 use vfscore::{dentry::VfsDentry, path::VfsPath, VfsResult};
@@ -37,7 +37,7 @@ fn common_load_or_create_fs(
     (match fs_domain {
         DomainType::FsDomain(fs) => {
             if !is_init_done {
-                let mp = RRefVec::from_slice(mp);
+                let mp = DVec::from_slice(mp);
                 let root_inode_id = fs.mount(&mp, None).unwrap();
                 RootShimDentry::new(fs, root_inode_id, fs_ident)
             } else {
@@ -60,7 +60,7 @@ fn init_filesystem_before(initrd: &[u8]) -> VfsResult<Arc<dyn VfsDentry>> {
     let devfs_domain = basic::get_domain("devfs").unwrap();
     let devfs_root = match devfs_domain {
         DomainType::DevFsDomain(devfs) => {
-            let mp = RRefVec::from_slice(b"/dev");
+            let mp = DVec::from_slice(b"/dev");
             let root_inode_id = devfs.mount(&mp, None).unwrap();
             let shim_root_dentry: Arc<dyn VfsDentry> =
                 RootShimDentry::new(devfs.clone(), root_inode_id, Arc::new(Vec::from("devfs")));
@@ -116,7 +116,7 @@ fn init_filesystem_before(initrd: &[u8]) -> VfsResult<Arc<dyn VfsDentry>> {
                 .open(None)
                 .expect("open /dev/sda failed");
             let _id = insert_dentry(blk_inode.clone(), OpenFlags::O_RDWR);
-            let mp = RRefVec::from_slice(b"/tests");
+            let mp = DVec::from_slice(b"/tests");
             let blk_inode = blk_inode
                 .downcast_arc::<RootShimDentry>()
                 .map_err(|_| "blk_inode downcast failed")
@@ -132,7 +132,7 @@ fn init_filesystem_before(initrd: &[u8]) -> VfsResult<Arc<dyn VfsDentry>> {
                     ident
                 },
             };
-            let root_inode_id = fatfs.mount(&mp, Some(RRef::new(info))).unwrap();
+            let root_inode_id = fatfs.mount(&mp, Some(DBox::new(info))).unwrap();
             let shim_inode =
                 RootShimDentry::new(fatfs, root_inode_id, Arc::new(Vec::from("fatfs-1")));
             path.join("tests")?.mount(shim_inode, 0)?;

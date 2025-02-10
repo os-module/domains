@@ -1,8 +1,9 @@
 use std::{
+    fs::OpenOptions,
     io::{Read, Seek, Write},
     path::{Path, PathBuf},
 };
-use std::fs::OpenOptions;
+
 use fs_extra::dir::CopyOptions;
 
 #[derive(Debug, Copy, Clone)]
@@ -98,7 +99,7 @@ fn create_project_dir(ty: DomainType, name: &str) {
 }
 
 fn create_lib_crate(interface_name: &str, domain_name: &str, ty: DomainType) {
-    let path = PathBuf::from(format!("./{}/{}/{}", ty.as_ref(), domain_name,domain_name));
+    let path = PathBuf::from(format!("./{}/{}/{}", ty.as_ref(), domain_name, domain_name));
     // copy lib-template dir
     let copy_options = CopyOptions::new().content_only(true);
 
@@ -133,7 +134,12 @@ fn create_lib_crate(interface_name: &str, domain_name: &str, ty: DomainType) {
 }
 
 fn create_bin_crate(interface_name: &str, domain_name: &str, ty: DomainType) {
-    let path = PathBuf::from(format!("./{}/{}/g{}", ty.as_ref(), domain_name,domain_name));
+    let path = PathBuf::from(format!(
+        "./{}/{}/g{}",
+        ty.as_ref(),
+        domain_name,
+        domain_name
+    ));
     let template_path = Path::new("./domain/template/bin-template");
     let copy_options = CopyOptions::new().content_only(true);
     fs_extra::dir::copy(template_path, &path, &copy_options).unwrap();

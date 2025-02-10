@@ -7,14 +7,14 @@ use core::fmt::Debug;
 
 use basic::AlienResult;
 use interface::{define_unwind_for_EmptyDeviceDomain, Basic, EmptyDeviceDomain};
-use rref::RRefVec;
+use shared_heap::DVec;
 
 #[derive(Debug)]
 pub struct RandomDeviceDomainImpl;
 
 impl Basic for RandomDeviceDomainImpl {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -23,7 +23,7 @@ impl EmptyDeviceDomain for RandomDeviceDomainImpl {
         Ok(())
     }
 
-    fn read(&self, mut data: RRefVec<u8>) -> AlienResult<RRefVec<u8>> {
+    fn read(&self, mut data: DVec<u8>) -> AlienResult<DVec<u8>> {
         let mut current_time = basic::time::read_time_ms();
         data.as_mut_slice().iter_mut().for_each(|x| {
             *x = current_time as u8;
@@ -31,7 +31,7 @@ impl EmptyDeviceDomain for RandomDeviceDomainImpl {
         });
         Ok(data)
     }
-    fn write(&self, data: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write(&self, data: &DVec<u8>) -> AlienResult<usize> {
         Ok(data.len())
     }
 }

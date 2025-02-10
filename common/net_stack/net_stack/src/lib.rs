@@ -33,7 +33,7 @@ use interface::{
 };
 use log::{debug, info};
 use lose_net_stack::{connection::NetServer, MacAddress};
-use rref::{RRef, RRefVec};
+use shared_heap::{DBox, DVec};
 use spin::Once;
 
 use crate::{error::to_alien_error, nic::NetMod, socket::Socket, socket_pair::SocketPair};
@@ -78,7 +78,7 @@ impl NetStack {
 
 impl Basic for NetStack {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -87,7 +87,7 @@ impl DeviceBase for NetStack {
         info!("<handle_irq> NetStack handle_irq");
         let nic = NET_INTERFACE.get().unwrap();
         nic.handle_irq()?;
-        let mut shared_buf = RRefVec::new_uninit(1600);
+        let mut shared_buf = DVec::new_uninit(1600);
         while nic.can_receive()? {
             let (mut buf, len) = nic.receive(shared_buf).unwrap();
             debug!("recv data {} bytes", len);
@@ -134,7 +134,7 @@ impl NetDomain for NetStack {
     fn bind(
         &self,
         socket_id: SocketID,
-        socket_addr: &RRef<SocketAddrIn>,
+        socket_addr: &DBox<SocketAddrIn>,
     ) -> AlienResult<Option<SocketID>> {
         let socket = SOCKET_MAP
             .lock()
@@ -203,7 +203,7 @@ impl NetDomain for NetStack {
         }
     }
 
-    fn connect(&self, socket_id: SocketID, addr: &RRef<SocketAddrV4>) -> AlienResult<()> {
+    fn connect(&self, socket_id: SocketID, addr: &DBox<SocketAddrV4>) -> AlienResult<()> {
         let socket = SOCKET_MAP
             .lock()
             .get(&socket_id)
@@ -222,8 +222,8 @@ impl NetDomain for NetStack {
     fn recv_from(
         &self,
         socket_id: SocketID,
-        mut socket_arg_tuple: RRef<SocketArgTuple>,
-    ) -> AlienResult<RRef<SocketArgTuple>> {
+        mut socket_arg_tuple: DBox<SocketArgTuple>,
+    ) -> AlienResult<DBox<SocketArgTuple>> {
         let socket = SOCKET_MAP
             .lock()
             .get(&socket_id)
@@ -258,8 +258,8 @@ impl NetDomain for NetStack {
     fn sendto(
         &self,
         socket_id: SocketID,
-        buf: &RRefVec<u8>,
-        remote_addr: Option<&RRef<SocketAddrV4>>,
+        buf: &DVec<u8>,
+        remote_addr: Option<&DBox<SocketAddrV4>>,
     ) -> AlienResult<usize> {
         let socket = SOCKET_MAP
             .lock()
@@ -297,8 +297,8 @@ impl NetDomain for NetStack {
     fn remote_addr(
         &self,
         socket_id: SocketID,
-        mut addr: RRef<SocketAddrIn>,
-    ) -> AlienResult<RRef<SocketAddrIn>> {
+        mut addr: DBox<SocketAddrIn>,
+    ) -> AlienResult<DBox<SocketAddrIn>> {
         let socket = SOCKET_MAP
             .lock()
             .get(&socket_id)
@@ -320,8 +320,8 @@ impl NetDomain for NetStack {
     fn local_addr(
         &self,
         socket_id: SocketID,
-        mut addr: RRef<SocketAddrIn>,
-    ) -> AlienResult<RRef<SocketAddrIn>> {
+        mut addr: DBox<SocketAddrIn>,
+    ) -> AlienResult<DBox<SocketAddrIn>> {
         let socket = SOCKET_MAP
             .lock()
             .get(&socket_id)
@@ -344,8 +344,8 @@ impl NetDomain for NetStack {
         &self,
         socket_id: SocketID,
         offset: u64,
-        mut buf: RRefVec<u8>,
-    ) -> AlienResult<(RRefVec<u8>, usize)> {
+        mut buf: DVec<u8>,
+    ) -> AlienResult<(DVec<u8>, usize)> {
         let socket = SOCKET_MAP
             .lock()
             .get(&socket_id)
@@ -355,7 +355,7 @@ impl NetDomain for NetStack {
         Ok((buf, r))
     }
 
-    fn write_at(&self, socket_id: SocketID, offset: u64, buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write_at(&self, socket_id: SocketID, offset: u64, buf: &DVec<u8>) -> AlienResult<usize> {
         let socket = SOCKET_MAP
             .lock()
             .get(&socket_id)

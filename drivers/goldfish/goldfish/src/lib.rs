@@ -13,8 +13,8 @@ use basic::{
     AlienResult,
 };
 use interface::{define_unwind_for_RtcDomain, Basic, DeviceBase, RtcDomain};
-use rref::RRef;
 use rtc::{goldfish::GoldFishRtc, LowRtcDevice, RtcIORegion};
+use shared_heap::DBox;
 use timestamp::DateTime;
 
 #[derive(Debug, Default)]
@@ -37,7 +37,7 @@ impl RtcIORegion for SafeIORegionWrapper {
 
 impl Basic for Rtc {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -69,7 +69,7 @@ impl RtcDomain for Rtc {
         Ok(())
     }
 
-    fn read_time(&self, mut time: RRef<RtcTime>) -> AlienResult<RRef<RtcTime>> {
+    fn read_time(&self, mut time: DBox<RtcTime>) -> AlienResult<DBox<RtcTime>> {
         let time_stamp_nanos = self.rtc.get_must().read_time();
         const NANOS_PER_SEC: usize = 1_000_000_000;
         let date = DateTime::new(time_stamp_nanos as usize / NANOS_PER_SEC);

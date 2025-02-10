@@ -2,7 +2,6 @@ use std::{fs, path::Path};
 
 use crate::subcommand::{Config, DOMAIN_SET};
 
-
 fn check_output_exist(output: &String) {
     let disk_path = format!("{}/disk", output);
     let init_path = format!("{}/init", output);
@@ -15,7 +14,7 @@ fn check_output_exist(output: &String) {
     }
 }
 
-pub fn build_single(name: &str, log: &str,output:&String) {
+pub fn build_single(name: &str, log: &str, output: &String) {
     check_output_exist(output);
     let domain_list = fs::read_to_string("./domain-list.toml").unwrap();
     let config: Config = toml::from_str(&domain_list).unwrap();
@@ -30,11 +29,11 @@ pub fn build_single(name: &str, log: &str,output:&String) {
     }
     let init_members = config.domains.get("init_members").unwrap();
     if init_members.contains(&r_name.to_string()) {
-        build_domain(r_name, log.to_string(), "init",output);
+        build_domain(r_name, log.to_string(), "init", output);
     } else {
         let disk_members = config.domains.get("disk_members").unwrap();
         if disk_members.contains(&r_name.to_string()) {
-            build_domain(r_name, log.to_string(), "disk",output);
+            build_domain(r_name, log.to_string(), "disk", output);
         } else {
             println!(
                 "Domain [{}] is not in the init or disk members list, skip building",
@@ -70,7 +69,7 @@ pub fn build_domain(name: &str, log: String, dir: &str, output: &String) {
             println!("Build domain [{}] project success", name);
             std::process::Command::new("cp")
                 .arg(format!("./target/riscv64/release/g{}", name))
-                .arg(format!("{}/{}/g{}",output, dir, name))
+                .arg(format!("{}/{}/g{}", output, dir, name))
                 .status()
                 .expect("failed to execute cp");
             println!("Copy domain [{}] project success", name);
@@ -79,7 +78,7 @@ pub fn build_domain(name: &str, log: String, dir: &str, output: &String) {
     }
 }
 
-pub fn build_all(log: String,output: &String) {
+pub fn build_all(log: String, output: &String) {
     check_output_exist(output);
     let domain_list = fs::read_to_string("./domain-list.toml").unwrap();
     let config: Config = toml::from_str(&domain_list).unwrap();
@@ -109,7 +108,7 @@ pub fn build_all(log: String,output: &String) {
             }
             let value = log.to_string();
 
-            build_domain(&domain_name, value, "disk",output)
+            build_domain(&domain_name, value, "disk", output)
         }
     }
 }

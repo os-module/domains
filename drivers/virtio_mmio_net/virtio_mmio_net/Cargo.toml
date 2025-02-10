@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 interface = { path = "../../../../domain-lib/interface" }
 basic = { path = "../../../../domain-lib/basic" }
-rref = { path = "../../../../domain-lib/rref" }
+shared_heap = { path = "../../../../domain-lib/shared_heap" }
 
 virtio-drivers = { git = "https://github.com/os-module/safe-virtio-drivers" }
 virtio_mmio_common = { path = "../../../common_lib/virtio_mmio_common" }

@@ -21,7 +21,7 @@ use interface::{
     define_unwind_for_FsDomain, Basic, DirEntryWrapper, DomainType, FsDomain, InodeID, MountInfo,
     VfsDomain,
 };
-use rref::{RRef, RRefVec};
+use shared_heap::{DBox, DVec};
 use spin::Once;
 use vfs_common::shim::{FsShimInode, RootShimDentry};
 use vfscore::{
@@ -82,7 +82,7 @@ impl GenericFsDomain {
 
 impl Basic for GenericFsDomain {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -102,8 +102,8 @@ impl FsDomain for GenericFsDomain {
     }
     fn mount(
         &self,
-        mount_point: &RRefVec<u8>,
-        dev_inode: Option<RRef<MountInfo>>,
+        mount_point: &DVec<u8>,
+        dev_inode: Option<DBox<MountInfo>>,
     ) -> AlienResult<InodeID> {
         let mount_point = core::str::from_utf8(mount_point.as_slice()).unwrap();
         let dev_inode: Option<Arc<dyn VfsInode>> = match dev_inode {
@@ -155,8 +155,8 @@ impl FsDomain for GenericFsDomain {
     fn dentry_name(
         &self,
         inode: InodeID,
-        mut buf: RRefVec<u8>,
-    ) -> AlienResult<(RRefVec<u8>, usize)> {
+        mut buf: DVec<u8>,
+    ) -> AlienResult<(DVec<u8>, usize)> {
         let inode = self
             .dentry_map
             .lock()
@@ -172,8 +172,8 @@ impl FsDomain for GenericFsDomain {
     fn dentry_path(
         &self,
         inode: InodeID,
-        mut buf: RRefVec<u8>,
-    ) -> AlienResult<(RRefVec<u8>, usize)> {
+        mut buf: DVec<u8>,
+    ) -> AlienResult<(DVec<u8>, usize)> {
         let inode = self.dentry_map.lock().index(&inode).clone();
         let path = inode.path();
         let copy_len = core::cmp::min(path.len(), buf.len());
@@ -184,7 +184,7 @@ impl FsDomain for GenericFsDomain {
     fn dentry_set_parent(
         &self,
         inode: InodeID,
-        domain_ident: &RRefVec<u8>,
+        domain_ident: &DVec<u8>,
         parent: InodeID,
     ) -> AlienResult<()> {
         let dentry = self.dentry_map.lock().index(&inode).clone();
@@ -225,7 +225,7 @@ impl FsDomain for GenericFsDomain {
     fn dentry_to_mount_point(
         &self,
         inode: InodeID,
-        domain_ident: &RRefVec<u8>,
+        domain_ident: &DVec<u8>,
         mount_inode_id: InodeID,
     ) -> AlienResult<()> {
         let dentry = self.dentry_map.lock().index(&inode).clone();
@@ -249,8 +249,8 @@ impl FsDomain for GenericFsDomain {
     fn dentry_mount_point(
         &self,
         inode: InodeID,
-        mut domain_ident: RRefVec<u8>,
-    ) -> AlienResult<Option<(RRefVec<u8>, InodeID)>> {
+        mut domain_ident: DVec<u8>,
+    ) -> AlienResult<Option<(DVec<u8>, InodeID)>> {
         let dentry = self
             .dentry_map
             .lock()
@@ -281,7 +281,7 @@ impl FsDomain for GenericFsDomain {
         Ok(())
     }
 
-    fn dentry_find(&self, inode: InodeID, name: &RRefVec<u8>) -> AlienResult<Option<InodeID>> {
+    fn dentry_find(&self, inode: InodeID, name: &DVec<u8>) -> AlienResult<Option<InodeID>> {
         let dentry = self.dentry_map.lock().index(&inode).clone();
         let name = core::str::from_utf8(name.as_slice()).unwrap();
         let sub_dentry = dentry.find(name);
@@ -296,7 +296,7 @@ impl FsDomain for GenericFsDomain {
         Ok(Some(inode_id))
     }
 
-    fn dentry_remove(&self, inode: InodeID, name: &RRefVec<u8>) -> AlienResult<()> {
+    fn dentry_remove(&self, inode: InodeID, name: &DVec<u8>) -> AlienResult<()> {
         let dentry = self.dentry_map.lock().index(&inode).clone();
         let name = core::str::from_utf8(name.as_slice()).unwrap();
         let _sub_dentry = dentry.remove(name);
@@ -308,14 +308,14 @@ impl FsDomain for GenericFsDomain {
         &self,
         inode: InodeID,
         offset: u64,
-        buf: RRefVec<u8>,
-    ) -> AlienResult<(RRefVec<u8>, usize)> {
+        buf: DVec<u8>,
+    ) -> AlienResult<(DVec<u8>, usize)> {
         let inode = self.dentry_map.lock().index(&inode).inode()?;
         let (buf, r) = inode.read_at(offset, buf)?;
         Ok((buf, r))
     }
 
-    fn write_at(&self, inode: InodeID, offset: u64, buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write_at(&self, inode: InodeID, offset: u64, buf: &DVec<u8>) -> AlienResult<usize> {
         let inode = self.dentry_map.lock().index(&inode).inode()?;
         let w = inode.write_at(offset, buf)?;
         Ok(w)
@@ -325,8 +325,8 @@ impl FsDomain for GenericFsDomain {
         &self,
         inode: InodeID,
         start_index: usize,
-        mut entry: RRef<DirEntryWrapper>,
-    ) -> AlienResult<RRef<DirEntryWrapper>> {
+        mut entry: DBox<DirEntryWrapper>,
+    ) -> AlienResult<DBox<DirEntryWrapper>> {
         let inode = self.dentry_map.lock().index(&inode).inode()?;
         let vfs_entry = inode.readdir(start_index)?;
         match vfs_entry {
@@ -368,7 +368,7 @@ impl FsDomain for GenericFsDomain {
         Ok(())
     }
 
-    fn rmdir(&self, parent: InodeID, name: &RRefVec<u8>) -> AlienResult<()> {
+    fn rmdir(&self, parent: InodeID, name: &DVec<u8>) -> AlienResult<()> {
         let parent_dentry = self.dentry_map.lock().index(&parent).clone();
         let name = core::str::from_utf8(name.as_slice()).unwrap();
         let parent = parent_dentry.inode()?;
@@ -386,7 +386,7 @@ impl FsDomain for GenericFsDomain {
     fn create(
         &self,
         parent: InodeID,
-        name: &RRefVec<u8>,
+        name: &DVec<u8>,
         ty: VfsNodeType,
         perm: VfsNodePerm,
         rdev: Option<u64>,
@@ -403,7 +403,7 @@ impl FsDomain for GenericFsDomain {
         Ok(inode_id)
     }
 
-    fn link(&self, parent: InodeID, name: &RRefVec<u8>, src: InodeID) -> AlienResult<InodeID> {
+    fn link(&self, parent: InodeID, name: &DVec<u8>, src: InodeID) -> AlienResult<InodeID> {
         let parent_dentry = self.dentry_map.lock().index(&parent).clone();
         let name = core::str::from_utf8(name.as_slice()).unwrap();
         let src_dentry = self.dentry_map.lock().index(&src).clone();
@@ -419,7 +419,7 @@ impl FsDomain for GenericFsDomain {
         Ok(inode_id)
     }
 
-    fn unlink(&self, parent: InodeID, name: &RRefVec<u8>) -> AlienResult<()> {
+    fn unlink(&self, parent: InodeID, name: &DVec<u8>) -> AlienResult<()> {
         let parent_dentry = self.dentry_map.lock().index(&parent).clone();
         let name = core::str::from_utf8(name.as_slice()).unwrap();
         let parent = parent_dentry.inode()?;
@@ -432,8 +432,8 @@ impl FsDomain for GenericFsDomain {
     fn symlink(
         &self,
         parent: InodeID,
-        name: &RRefVec<u8>,
-        link: &RRefVec<u8>,
+        name: &DVec<u8>,
+        link: &DVec<u8>,
     ) -> AlienResult<InodeID> {
         let parent_dentry = self.dentry_map.lock().index(&parent).clone();
         let name = core::str::from_utf8(name.as_slice()).unwrap();
@@ -448,7 +448,7 @@ impl FsDomain for GenericFsDomain {
         Ok(inode_id)
     }
 
-    fn lookup(&self, parent: InodeID, name: &RRefVec<u8>) -> AlienResult<InodeID> {
+    fn lookup(&self, parent: InodeID, name: &DVec<u8>) -> AlienResult<InodeID> {
         let parent_dentry = self.dentry_map.lock().index(&parent).clone();
         let name = core::str::from_utf8(name.as_slice()).unwrap();
         // println_color!(31, "<generic> lookup {:?} in dir {}", name, parent_dentry.name());
@@ -468,7 +468,7 @@ impl FsDomain for GenericFsDomain {
         Ok(inode_id)
     }
 
-    fn readlink(&self, inode: InodeID, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn readlink(&self, inode: InodeID, buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         let inode = self.dentry_map.lock().index(&inode).inode()?;
         let (buf, l) = inode.readlink(buf)?;
         Ok((buf, l))
@@ -501,9 +501,9 @@ impl FsDomain for GenericFsDomain {
     fn rename(
         &self,
         old_parent: InodeID,
-        old_name: &RRefVec<u8>,
+        old_name: &DVec<u8>,
         new_parent: InodeID,
-        new_name: &RRefVec<u8>,
+        new_name: &DVec<u8>,
         flags: VfsRenameFlag,
     ) -> AlienResult<()> {
         let old_parent_dt = self.dentry_map.lock().index(&old_parent).clone();
@@ -528,7 +528,7 @@ impl FsDomain for GenericFsDomain {
         Ok(())
     }
 
-    fn stat_fs(&self, mut fs_stat: RRef<VfsFsStat>) -> AlienResult<RRef<VfsFsStat>> {
+    fn stat_fs(&self, mut fs_stat: DBox<VfsFsStat>) -> AlienResult<DBox<VfsFsStat>> {
         let inode = self.dentry_map.lock().index(&0).inode()?;
         let stat = inode.get_super_block()?.stat_fs()?;
         *fs_stat = stat;
@@ -552,7 +552,7 @@ impl FsDomain for GenericFsDomain {
         Ok(self.fs.fs_flag())
     }
 
-    fn fs_name(&self, mut name: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn fs_name(&self, mut name: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         let fs_name = self.fs.fs_name();
         let copy_len = core::cmp::min(name.len(), fs_name.len());
         name.as_mut_slice()[..copy_len].copy_from_slice(&fs_name.as_bytes()[..copy_len]);

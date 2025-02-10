@@ -17,7 +17,7 @@ use alloc::{boxed::Box, format, sync::Arc, vec, vec::Vec};
 
 use basic::{constants::*, println, AlienResult};
 use interface::*;
-use rref::RRefVec;
+use shared_heap::DVec;
 
 use crate::{domain::*, fs::*, gui::*, mm::*, signal::*, socket::*, system::*, task::*, time::*};
 
@@ -53,7 +53,7 @@ impl SysCallDomainImpl {
 
 impl Basic for SysCallDomainImpl {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -62,7 +62,7 @@ impl SysCallDomain for SysCallDomainImpl {
         let log_info = "syscall domain test log domain.";
         self.logger.log(
             interface::Level::Info,
-            &RRefVec::from_slice(log_info.as_bytes()),
+            &DVec::from_slice(log_info.as_bytes()),
         )?;
         println!("syscall domain init");
         Ok(())
@@ -79,7 +79,7 @@ impl SysCallDomain for SysCallDomainImpl {
             let log_info = format!("[tid:{:?}] syscall: 2003", tid);
             self.logger.log(
                 interface::Level::Info,
-                &RRefVec::from_slice(log_info.as_bytes()),
+                &DVec::from_slice(log_info.as_bytes()),
             )?;
             return Ok(0);
         }

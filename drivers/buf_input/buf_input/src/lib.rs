@@ -66,7 +66,7 @@ impl DeviceBase for BufInput {
 
 impl Basic for BufInput {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 

@@ -10,7 +10,7 @@ use core::panic::PanicInfo;
 use basic::domain_main;
 use corelib::CoreFunction;
 use interface::DevFsDomain;
-use rref::{domain_id, SharedHeapAlloc};
+use shared_heap::{domain_id, SharedHeapAlloc};
 use storage::StorageArg;
 #[domain_main]
 fn main(
@@ -21,8 +21,8 @@ fn main(
 ) -> Box<dyn DevFsDomain> {
     // init basic
     corelib::init(sys);
-    // init rref's shared heap
-    rref::init(shared_heap, domain_id);
+    // init shared_heap's shared heap
+    shared_heap::init(shared_heap, domain_id);
     basic::logging::init_logger();
     // init storage
     let StorageArg { allocator, storage } = storage_arg;

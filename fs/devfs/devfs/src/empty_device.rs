@@ -2,7 +2,7 @@ use alloc::sync::Arc;
 
 use basic::constants::DeviceId;
 use interface::EmptyDeviceDomain;
-use rref::RRefVec;
+use shared_heap::DVec;
 use vfscore::{
     error::VfsError,
     file::VfsFile,
@@ -23,12 +23,12 @@ impl EmptyDevice {
 }
 
 impl VfsFile for EmptyDevice {
-    fn read_at(&self, _offset: u64, buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
+    fn read_at(&self, _offset: u64, buf: DVec<u8>) -> VfsResult<(DVec<u8>, usize)> {
         let shared_buf = self.domain.read(buf)?;
         let len = shared_buf.len();
         Ok((shared_buf, len))
     }
-    fn write_at(&self, _offset: u64, buf: &RRefVec<u8>) -> VfsResult<usize> {
+    fn write_at(&self, _offset: u64, buf: &DVec<u8>) -> VfsResult<usize> {
         Ok(buf.len())
     }
 }

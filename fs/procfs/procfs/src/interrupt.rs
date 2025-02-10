@@ -4,7 +4,7 @@ use alloc::{
 };
 use core::cmp::min;
 
-use rref::RRefVec;
+use shared_heap::DVec;
 // use interrupt::record::interrupts_info;
 use vfscore::error::VfsError;
 use vfscore::{
@@ -18,13 +18,13 @@ use vfscore::{
 pub struct InterruptRecord;
 
 impl VfsFile for InterruptRecord {
-    fn read_at(&self, offset: u64, mut buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
+    fn read_at(&self, offset: u64, mut buf: DVec<u8>) -> VfsResult<(DVec<u8>, usize)> {
         let info = interrupts_info();
         let min_len = min(buf.len(), info.as_bytes().len() - offset as usize);
         buf.as_mut_slice()[..min_len].copy_from_slice(&info.as_bytes()[..min_len]);
         Ok((buf, min_len))
     }
-    fn write_at(&self, _offset: u64, _buf: &RRefVec<u8>) -> VfsResult<usize> {
+    fn write_at(&self, _offset: u64, _buf: &DVec<u8>) -> VfsResult<usize> {
         Err(VfsError::PermissionDenied)
     }
 }

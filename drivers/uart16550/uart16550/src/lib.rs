@@ -13,7 +13,7 @@ use basic::{
 };
 use interface::{define_unwind_for_UartDomain, Basic, DeviceBase, UartDomain};
 use raw_uart16550::{InterruptTypes, Uart16550, Uart16550IO};
-use rref::RRefVec;
+use shared_heap::DVec;
 
 #[derive(Debug)]
 pub struct SafeIORegionWrapper(SafeIORegion);
@@ -47,7 +47,7 @@ impl DeviceBase for UartDomainImpl {
 
 impl Basic for UartDomainImpl {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -83,7 +83,7 @@ impl UartDomain for UartDomainImpl {
         }
     }
 
-    fn put_bytes(&self, buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn put_bytes(&self, buf: &DVec<u8>) -> AlienResult<usize> {
         let w = self.uart.get_must().write(buf.as_slice());
         Ok(w)
     }

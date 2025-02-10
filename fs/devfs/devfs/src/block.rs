@@ -2,7 +2,7 @@ use alloc::sync::Arc;
 
 use basic::constants::DeviceId;
 use interface::CacheBlkDeviceDomain;
-use rref::RRefVec;
+use shared_heap::DVec;
 use vfscore::{
     error::VfsError,
     file::VfsFile,
@@ -23,7 +23,7 @@ impl BLKDevice {
 }
 
 impl VfsFile for BLKDevice {
-    fn read_at(&self, offset: u64, buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
+    fn read_at(&self, offset: u64, buf: DVec<u8>) -> VfsResult<(DVec<u8>, usize)> {
         let len = buf.len();
         let buf = self
             .device
@@ -31,7 +31,7 @@ impl VfsFile for BLKDevice {
             .map_err(|_| VfsError::IoError)?;
         Ok((buf, len))
     }
-    fn write_at(&self, offset: u64, buf: &RRefVec<u8>) -> VfsResult<usize> {
+    fn write_at(&self, offset: u64, buf: &DVec<u8>) -> VfsResult<usize> {
         self.device
             .write(offset, buf)
             .map_err(|_| VfsError::IoError)?;

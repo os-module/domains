@@ -10,7 +10,7 @@ use basic::{
 };
 use interface::{NetDomain, SocketArgTuple, TaskDomain, VfsDomain};
 use log::error;
-use rref::{RRef, RRefVec};
+use shared_heap::{DBox, DVec};
 
 pub fn sys_socket(
     task_domain: &Arc<dyn TaskDomain>,
@@ -82,7 +82,7 @@ pub fn sys_bind(
     if domain != Domain::AF_INET {
         return Err(AlienError::EAFNOSUPPORT);
     }
-    let reuse_socket_id = net_stack_domain.bind(socket_id, &RRef::new(addr))?;
+    let reuse_socket_id = net_stack_domain.bind(socket_id, &DBox::new(addr))?;
     if reuse_socket_id.is_some() {
         panic!("now we don't support reuse socket")
     }
@@ -122,7 +122,7 @@ pub fn sys_accept(
         match new_socket_id {
             Ok(new_socket_id) => {
                 if addr != 0 {
-                    let remote_addr = RRef::new(SocketAddrIn::default());
+                    let remote_addr = DBox::new(SocketAddrIn::default());
                     let remote_addr = net_stack_domain.remote_addr(new_socket_id, remote_addr)?;
                     let raw = SocketAddrInRaw::from(*remote_addr);
                     task_domain.write_val_to_user(addr, &raw)?;
@@ -161,7 +161,7 @@ pub fn sys_connect(
         return Err(AlienError::EAFNOSUPPORT);
     }
     let socket_addr = SocketAddrV4::new(addr.addr, addr.in_port.to_be());
-    let socket_addr = RRef::new(socket_addr);
+    let socket_addr = DBox::new(socket_addr);
 
     loop {
         let res = net_stack_domain.connect(socket_id, &socket_addr);
@@ -190,10 +190,10 @@ pub fn sys_recvfrom(
     let inode_id = task_domain.get_fd(fd)?;
     let socket_id = vfs_domain.socket_id(inode_id)?;
 
-    // todo! RRef::new(SocketArgTuple {} may leak memory
-    let remote_addr = RRef::new(SocketAddrIn::default());
-    let mut tmp_arg_tuple = RRef::new(SocketArgTuple {
-        buf: RRefVec::new(0, len),
+    // todo! DBox::new(SocketArgTuple {} may leak memory
+    let remote_addr = DBox::new(SocketAddrIn::default());
+    let mut tmp_arg_tuple = DBox::new(SocketArgTuple {
+        buf: DVec::new(0, len),
         addr: remote_addr,
         len: 0,
     });
@@ -241,7 +241,7 @@ pub fn sys_sendto(
     );
     let inode_id = task_domain.get_fd(fd)?;
     let socket_id = vfs_domain.socket_id(inode_id)?;
-    let mut data = RRefVec::new_uninit(len);
+    let mut data = DVec::new_uninit(len);
     task_domain.copy_from_user(buf, data.as_mut_slice())?;
 
     let remote_addr = if addr != 0 {
@@ -249,7 +249,7 @@ pub fn sys_sendto(
         let socket_addr =
             SocketAddrV4::new(Ipv4Addr::from(addr_raw.addr), addr_raw.in_port.to_be());
         error!("<sys_sendto> remote_addr: {:?}", socket_addr);
-        let socket_addr = RRef::new(socket_addr);
+        let socket_addr = DBox::new(socket_addr);
         Some(socket_addr)
     } else {
         None
@@ -273,7 +273,7 @@ pub fn sys_getsockname(
     );
     let inode_id = task_domain.get_fd(fd)?;
     let socket_id = vfs_domain.socket_id(inode_id)?;
-    let local_addr = RRef::new(SocketAddrIn::default());
+    let local_addr = DBox::new(SocketAddrIn::default());
     let local_addr = net_stack_domain.local_addr(socket_id, local_addr)?;
     let raw = SocketAddrInRaw::from(*local_addr);
     task_domain.write_val_to_user(addr, &raw)?;
@@ -296,7 +296,7 @@ pub fn sys_getpeername(
     );
     let inode_id = task_domain.get_fd(fd)?;
     let socket_id = vfs_domain.socket_id(inode_id)?;
-    let remote_addr = RRef::new(SocketAddrIn::default());
+    let remote_addr = DBox::new(SocketAddrIn::default());
     let remote_addr = net_stack_domain.remote_addr(socket_id, remote_addr)?;
     let raw = SocketAddrInRaw::from(*remote_addr);
     task_domain.write_val_to_user(addr, &raw)?;

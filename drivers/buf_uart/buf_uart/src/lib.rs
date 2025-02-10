@@ -13,7 +13,7 @@ use basic::{
 use interface::{
     define_unwind_for_BufUartDomain, Basic, BufUartDomain, DeviceBase, DomainType, UartDomain,
 };
-use rref::RRefVec;
+use shared_heap::DVec;
 
 #[derive(Debug)]
 pub struct Uart {
@@ -48,7 +48,7 @@ impl Uart {
 
 impl Basic for Uart {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -106,7 +106,7 @@ impl BufUartDomain for Uart {
         }
     }
 
-    fn put_bytes(&self, buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn put_bytes(&self, buf: &DVec<u8>) -> AlienResult<usize> {
         let uart = self.uart.get_must();
         uart.put_bytes(buf)
     }

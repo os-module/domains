@@ -6,7 +6,7 @@ use core::{cmp::min, ops::Range};
 
 use basic::{io::SafeIORegion, println, sync::Mutex, AlienError, AlienResult};
 use interface::{define_unwind_for_BlkDeviceDomain, Basic, BlkDeviceDomain, DeviceBase};
-use rref::RRefVec;
+use shared_heap::DVec;
 
 #[derive(Debug)]
 pub struct MemoryImg {
@@ -66,7 +66,7 @@ impl DeviceBase for MemoryImg {
 
 impl Basic for MemoryImg {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -78,11 +78,11 @@ impl BlkDeviceDomain for MemoryImg {
         *self.data.lock() = io_region;
         Ok(())
     }
-    fn read_block(&self, block: u32, mut data: RRefVec<u8>) -> AlienResult<RRefVec<u8>> {
+    fn read_block(&self, block: u32, mut data: DVec<u8>) -> AlienResult<DVec<u8>> {
         self.read_blocks(block as _, data.as_mut_slice())?;
         Ok(data)
     }
-    fn write_block(&self, block: u32, data: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write_block(&self, block: u32, data: &DVec<u8>) -> AlienResult<usize> {
         self.write_blocks(block as _, data.as_slice())
     }
     fn get_capacity(&self) -> AlienResult<u64> {

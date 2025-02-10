@@ -5,7 +5,7 @@ use alloc::sync::Arc;
 use basic::println;
 use id::alloc_device_id;
 use interface::DevFsDomain;
-use rref::RRefVec;
+use shared_heap::DVec;
 use vfscore::{dentry::VfsDentry, utils::VfsNodeType};
 
 ///```bash
@@ -25,10 +25,10 @@ pub fn init_devfs(devfs_domain: &Arc<dyn DevFsDomain>, root_dt: &Arc<dyn VfsDent
     let null_device_id = alloc_device_id(VfsNodeType::CharDevice);
     let random_device_id = alloc_device_id(VfsNodeType::CharDevice);
     devfs_domain
-        .register(null_device_id.id(), &RRefVec::from_slice(b"null"))
+        .register(null_device_id.id(), &DVec::from_slice(b"null"))
         .unwrap();
     devfs_domain
-        .register(random_device_id.id(), &RRefVec::from_slice(b"random"))
+        .register(random_device_id.id(), &DVec::from_slice(b"random"))
         .unwrap();
     root_inode
         .create(
@@ -90,7 +90,7 @@ pub fn scan_system_devices(devfs_domain: &Arc<dyn DevFsDomain>, root_dt: &Arc<dy
         Some(_) => {
             let uart_id = alloc_device_id(VfsNodeType::CharDevice);
             devfs_domain
-                .register(uart_id.id(), &RRefVec::from_slice(b"buf_uart"))
+                .register(uart_id.id(), &DVec::from_slice(b"buf_uart"))
                 .unwrap();
             root.create(
                 "tty",
@@ -109,7 +109,7 @@ pub fn scan_system_devices(devfs_domain: &Arc<dyn DevFsDomain>, root_dt: &Arc<dy
         Some(_) => {
             let gpu_id = alloc_device_id(VfsNodeType::CharDevice);
             devfs_domain
-                .register(gpu_id.id(), &RRefVec::from_slice(b"virtio_mmio_gpu-1"))
+                .register(gpu_id.id(), &DVec::from_slice(b"virtio_mmio_gpu-1"))
                 .unwrap();
             root.create(
                 "virtio-mmio-gpu",
@@ -128,7 +128,7 @@ pub fn scan_system_devices(devfs_domain: &Arc<dyn DevFsDomain>, root_dt: &Arc<dy
         Some(_) => {
             let mouse_id = alloc_device_id(VfsNodeType::CharDevice);
             devfs_domain
-                .register(mouse_id.id(), &RRefVec::from_slice(b"virtio_mmio_input-1"))
+                .register(mouse_id.id(), &DVec::from_slice(b"virtio_mmio_input-1"))
                 .unwrap();
             root.create(
                 "mouse",
@@ -147,10 +147,7 @@ pub fn scan_system_devices(devfs_domain: &Arc<dyn DevFsDomain>, root_dt: &Arc<dy
         Some(_) => {
             let keyboard_id = alloc_device_id(VfsNodeType::CharDevice);
             devfs_domain
-                .register(
-                    keyboard_id.id(),
-                    &RRefVec::from_slice(b"virtio_mmio_input-2"),
-                )
+                .register(keyboard_id.id(), &DVec::from_slice(b"virtio_mmio_input-2"))
                 .unwrap();
             root.create(
                 "keyboard",
@@ -169,7 +166,7 @@ pub fn scan_system_devices(devfs_domain: &Arc<dyn DevFsDomain>, root_dt: &Arc<dy
         Some(_) => {
             let blk_id = alloc_device_id(VfsNodeType::BlockDevice);
             devfs_domain
-                .register(blk_id.id(), &RRefVec::from_slice(b"cache_blk-1"))
+                .register(blk_id.id(), &DVec::from_slice(b"cache_blk-1"))
                 .unwrap();
             root.create(
                 "sda",
@@ -186,7 +183,7 @@ pub fn scan_system_devices(devfs_domain: &Arc<dyn DevFsDomain>, root_dt: &Arc<dy
         Some(_) => {
             let rtc_id = alloc_device_id(VfsNodeType::CharDevice);
             devfs_domain
-                .register(rtc_id.id(), &RRefVec::from_slice(b"goldfish"))
+                .register(rtc_id.id(), &DVec::from_slice(b"goldfish"))
                 .unwrap();
             root.create(
                 "rtc",

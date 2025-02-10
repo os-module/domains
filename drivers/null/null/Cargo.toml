@@ -8,4 +8,4 @@ edition = "2021"
 [dependencies]
 basic = { path = "../../../../domain-lib/basic" }
 interface = { path = "../../../../domain-lib/interface" }
-rref = { path = "../../../../domain-lib/rref" }
+shared_heap = { path = "../../../../domain-lib/shared_heap" }

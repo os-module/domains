@@ -2,7 +2,7 @@ use alloc::sync::Arc;
 
 use basic::constants::DeviceId;
 use interface::GpuDomain;
-use rref::RRefVec;
+use shared_heap::DVec;
 use vfscore::{
     error::VfsError,
     file::VfsFile,
@@ -23,10 +23,10 @@ impl GPUDevice {
 }
 
 impl VfsFile for GPUDevice {
-    fn read_at(&self, _offset: u64, _buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
+    fn read_at(&self, _offset: u64, _buf: DVec<u8>) -> VfsResult<(DVec<u8>, usize)> {
         Err(VfsError::Invalid)
     }
-    fn write_at(&self, offset: u64, buf: &RRefVec<u8>) -> VfsResult<usize> {
+    fn write_at(&self, offset: u64, buf: &DVec<u8>) -> VfsResult<usize> {
         // let gbuf = self.device.get_framebuffer();
         // let offset = offset as usize;
         // let gbuf_len = gbuf.len();

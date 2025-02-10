@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 basic = { path = "../../../../domain-lib/basic" }
-rref = { path = "../../../../domain-lib/rref" }
+shared_heap = { path = "../../../../domain-lib/shared_heap" }
 interface = { path = "../../../../domain-lib/interface" }
 
 vfscore = { path = "../../../../rvfs-ref/vfscore-ref", package = "vfscore-ref" , features = ["linux_error"] }

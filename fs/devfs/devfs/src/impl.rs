@@ -4,7 +4,7 @@ use core::fmt::Debug;
 use basic::AlienResult;
 use generic::GenericFsDomain;
 use interface::*;
-use rref::{RRef, RRefVec};
+use shared_heap::{DBox, DVec};
 use vfscore::{fstype::FileSystemFlags, inode::InodeAttr, superblock::SuperType, utils::*};
 
 use crate::{DEV_MAP, TASK_DOMAIN};
@@ -34,7 +34,7 @@ impl FsDomain for DevFsDomainImpl {
         self.generic_fs.init()
     }
 
-    fn mount(&self, mp: &RRefVec<u8>, dev_inode: Option<RRef<MountInfo>>) -> AlienResult<InodeID> {
+    fn mount(&self, mp: &DVec<u8>, dev_inode: Option<DBox<MountInfo>>) -> AlienResult<InodeID> {
         self.generic_fs.mount(mp, dev_inode)
     }
 
@@ -45,17 +45,17 @@ impl FsDomain for DevFsDomainImpl {
         self.generic_fs.drop_inode(inode)
     }
 
-    fn dentry_name(&self, inode: InodeID, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn dentry_name(&self, inode: InodeID, buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         self.generic_fs.dentry_name(inode, buf)
     }
 
-    fn dentry_path(&self, inode: InodeID, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn dentry_path(&self, inode: InodeID, buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         self.generic_fs.dentry_path(inode, buf)
     }
     fn dentry_set_parent(
         &self,
         inode: InodeID,
-        domain_ident: &RRefVec<u8>,
+        domain_ident: &DVec<u8>,
         parent: InodeID,
     ) -> AlienResult<()> {
         self.generic_fs
@@ -69,7 +69,7 @@ impl FsDomain for DevFsDomainImpl {
     fn dentry_to_mount_point(
         &self,
         inode: InodeID,
-        domain_ident: &RRefVec<u8>,
+        domain_ident: &DVec<u8>,
         mount_inode_id: InodeID,
     ) -> AlienResult<()> {
         self.generic_fs
@@ -79,8 +79,8 @@ impl FsDomain for DevFsDomainImpl {
     fn dentry_mount_point(
         &self,
         inode: InodeID,
-        domain_ident: RRefVec<u8>,
-    ) -> AlienResult<Option<(RRefVec<u8>, InodeID)>> {
+        domain_ident: DVec<u8>,
+    ) -> AlienResult<Option<(DVec<u8>, InodeID)>> {
         self.generic_fs.dentry_mount_point(inode, domain_ident)
     }
 
@@ -88,11 +88,11 @@ impl FsDomain for DevFsDomainImpl {
         self.generic_fs.dentry_clear_mount_point(inode)
     }
 
-    fn dentry_find(&self, inode: InodeID, name: &RRefVec<u8>) -> AlienResult<Option<InodeID>> {
+    fn dentry_find(&self, inode: InodeID, name: &DVec<u8>) -> AlienResult<Option<InodeID>> {
         self.generic_fs.dentry_find(inode, name)
     }
 
-    fn dentry_remove(&self, inode: InodeID, name: &RRefVec<u8>) -> AlienResult<()> {
+    fn dentry_remove(&self, inode: InodeID, name: &DVec<u8>) -> AlienResult<()> {
         self.generic_fs.dentry_remove(inode, name)
     }
 
@@ -100,12 +100,12 @@ impl FsDomain for DevFsDomainImpl {
         &self,
         inode: InodeID,
         offset: u64,
-        buf: RRefVec<u8>,
-    ) -> AlienResult<(RRefVec<u8>, usize)> {
+        buf: DVec<u8>,
+    ) -> AlienResult<(DVec<u8>, usize)> {
         self.generic_fs.read_at(inode, offset, buf)
     }
 
-    fn write_at(&self, inode: InodeID, offset: u64, buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write_at(&self, inode: InodeID, offset: u64, buf: &DVec<u8>) -> AlienResult<usize> {
         self.generic_fs.write_at(inode, offset, buf)
     }
 
@@ -113,8 +113,8 @@ impl FsDomain for DevFsDomainImpl {
         &self,
         inode: InodeID,
         start_index: usize,
-        entry: RRef<DirEntryWrapper>,
-    ) -> AlienResult<RRef<DirEntryWrapper>> {
+        entry: DBox<DirEntryWrapper>,
+    ) -> AlienResult<DBox<DirEntryWrapper>> {
         self.generic_fs.readdir(inode, start_index, entry)
     }
 
@@ -134,7 +134,7 @@ impl FsDomain for DevFsDomainImpl {
         self.generic_fs.fsync(inode)
     }
 
-    fn rmdir(&self, parent: InodeID, name: &RRefVec<u8>) -> AlienResult<()> {
+    fn rmdir(&self, parent: InodeID, name: &DVec<u8>) -> AlienResult<()> {
         self.generic_fs.rmdir(parent, name)
     }
 
@@ -145,7 +145,7 @@ impl FsDomain for DevFsDomainImpl {
     fn create(
         &self,
         parent: InodeID,
-        name: &RRefVec<u8>,
+        name: &DVec<u8>,
         ty: VfsNodeType,
         perm: VfsNodePerm,
         rdev: Option<u64>,
@@ -153,28 +153,23 @@ impl FsDomain for DevFsDomainImpl {
         self.generic_fs.create(parent, name, ty, perm, rdev)
     }
 
-    fn link(&self, parent: InodeID, name: &RRefVec<u8>, src: InodeID) -> AlienResult<InodeID> {
+    fn link(&self, parent: InodeID, name: &DVec<u8>, src: InodeID) -> AlienResult<InodeID> {
         self.generic_fs.link(parent, name, src)
     }
 
-    fn unlink(&self, parent: InodeID, name: &RRefVec<u8>) -> AlienResult<()> {
+    fn unlink(&self, parent: InodeID, name: &DVec<u8>) -> AlienResult<()> {
         self.generic_fs.unlink(parent, name)
     }
 
-    fn symlink(
-        &self,
-        parent: InodeID,
-        name: &RRefVec<u8>,
-        link: &RRefVec<u8>,
-    ) -> AlienResult<InodeID> {
+    fn symlink(&self, parent: InodeID, name: &DVec<u8>, link: &DVec<u8>) -> AlienResult<InodeID> {
         self.generic_fs.symlink(parent, name, link)
     }
 
-    fn lookup(&self, parent: InodeID, name: &RRefVec<u8>) -> AlienResult<InodeID> {
+    fn lookup(&self, parent: InodeID, name: &DVec<u8>) -> AlienResult<InodeID> {
         self.generic_fs.lookup(parent, name)
     }
 
-    fn readlink(&self, inode: InodeID, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn readlink(&self, inode: InodeID, buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         self.generic_fs.readlink(inode, buf)
     }
 
@@ -197,9 +192,9 @@ impl FsDomain for DevFsDomainImpl {
     fn rename(
         &self,
         old_parent: InodeID,
-        old_name: &RRefVec<u8>,
+        old_name: &DVec<u8>,
         new_parent: InodeID,
-        new_name: &RRefVec<u8>,
+        new_name: &DVec<u8>,
         flags: VfsRenameFlag,
     ) -> AlienResult<()> {
         self.generic_fs
@@ -214,7 +209,7 @@ impl FsDomain for DevFsDomainImpl {
         self.generic_fs.sync_fs(wait)
     }
 
-    fn stat_fs(&self, fs_stat: RRef<VfsFsStat>) -> AlienResult<RRef<VfsFsStat>> {
+    fn stat_fs(&self, fs_stat: DBox<VfsFsStat>) -> AlienResult<DBox<VfsFsStat>> {
         self.generic_fs.stat_fs(fs_stat)
     }
 
@@ -229,19 +224,19 @@ impl FsDomain for DevFsDomainImpl {
     fn fs_flag(&self) -> AlienResult<FileSystemFlags> {
         self.generic_fs.fs_flag()
     }
-    fn fs_name(&self, name: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn fs_name(&self, name: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         self.generic_fs.fs_name(name)
     }
 }
 
 impl Basic for DevFsDomainImpl {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
 impl DevFsDomain for DevFsDomainImpl {
-    fn register(&self, rdev: u64, device_domain_name: &RRefVec<u8>) -> AlienResult<()> {
+    fn register(&self, rdev: u64, device_domain_name: &DVec<u8>) -> AlienResult<()> {
         let name = core::str::from_utf8(device_domain_name.as_slice()).unwrap();
         let mut map = DEV_MAP.lock();
         map.insert(rdev, name.to_string());

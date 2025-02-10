@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 interface = { path = "../../../../domain-lib/interface" }
-rref = { path = "../../../../domain-lib/rref" }
+shared_heap = { path = "../../../../domain-lib/shared_heap" }
 basic = { path = "../../../../domain-lib/basic" }
 visionfive2-sd = { git = "https://github.com/os-module/visionfive2-sd.git" }
 #visionfive2-sd = { path = "../../../../os-modules/visionfive2-sd" }

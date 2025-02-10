@@ -18,7 +18,7 @@ use basic::{
     AlienResult,
 };
 use interface::{define_unwind_for_BlkDeviceDomain, Basic, BlkDeviceDomain, DeviceBase};
-use rref::{RRef, RRefVec};
+use shared_heap::{DBox, DVec};
 use virtio_drivers::{device::block::VirtIOBlk, transport::mmio::MmioTransport};
 use virtio_mmio_common::{HalImpl, SafeIORW};
 
@@ -40,7 +40,7 @@ impl Debug for BlkDomain {
 
 impl Basic for BlkDomain {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -62,7 +62,7 @@ impl BlkDeviceDomain for BlkDomain {
         self.blk.call_once(|| Mutex::new(blk));
         Ok(())
     }
-    fn read_block(&self, block: u32, mut data: RRefVec<u8>) -> AlienResult<RRefVec<u8>> {
+    fn read_block(&self, block: u32, mut data: DVec<u8>) -> AlienResult<DVec<u8>> {
         #[cfg(feature = "crash")]
         if basic::blk_crash_trick() {
             panic!("blk crash trick");
@@ -74,7 +74,7 @@ impl BlkDeviceDomain for BlkDomain {
             .expect("failed to read block");
         Ok(data)
     }
-    fn write_block(&self, block: u32, data: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write_block(&self, block: u32, data: &DVec<u8>) -> AlienResult<usize> {
         self.blk
             .get_must()
             .lock()

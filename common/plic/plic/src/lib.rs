@@ -18,7 +18,7 @@ use core::{
 use basic::{arch, config::CPU_NUM, io::SafeIORegion, println, sync::Mutex, AlienResult};
 use interface::{define_unwind_for_PLICDomain, Basic, DeviceBase, PLICDomain, PlicInfo, PlicType};
 use raw_plic::{Mode, PlicIO, PLIC};
-use rref::RRefVec;
+use shared_heap::DVec;
 use spin::Once;
 
 static PLIC: Once<PLIC<CPU_NUM>> = Once::new();
@@ -73,7 +73,7 @@ impl PLICDomainImpl {
 
 impl Basic for PLICDomainImpl {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -126,7 +126,7 @@ impl PLICDomain for PLICDomainImpl {
         Ok(())
     }
 
-    fn register_irq(&self, irq: usize, device_domain_name: &RRefVec<u8>) -> AlienResult<()> {
+    fn register_irq(&self, irq: usize, device_domain_name: &DVec<u8>) -> AlienResult<()> {
         let hard_id = arch::hart_id();
         println!(
             "PLIC enable irq {} for hart {}, priority {}",
@@ -146,7 +146,7 @@ impl PLICDomain for PLICDomainImpl {
         Ok(())
     }
 
-    fn irq_info(&self, mut buf: RRefVec<u8>) -> AlienResult<RRefVec<u8>> {
+    fn irq_info(&self, mut buf: DVec<u8>) -> AlienResult<DVec<u8>> {
         let interrupts = self.count.lock();
         let mut res = String::new();
         interrupts.iter().for_each(|(irq, value)| {

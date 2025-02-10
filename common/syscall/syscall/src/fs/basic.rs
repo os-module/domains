@@ -12,7 +12,7 @@ use bit_field::BitField;
 use interface::{TaskDomain, VfsDomain};
 use log::{debug, info};
 use pod::Pod;
-use rref::{RRef, RRefVec};
+use shared_heap::{DBox, DVec};
 use vfscore::utils::{VfsFileStat, VfsPollEvents};
 
 use crate::fs::user_path_at;
@@ -28,7 +28,7 @@ pub fn sys_openat(
     if path.is_null() {
         return Err(AlienError::EFAULT);
     }
-    let mut tmp_buf = RRefVec::<u8>::new_uninit(256);
+    let mut tmp_buf = DVec::<u8>::new_uninit(256);
     let len;
     (tmp_buf, len) = task_domain.read_string_from_user(path as usize, tmp_buf)?;
     let path = core::str::from_utf8(&tmp_buf.as_slice()[..len]).unwrap();
@@ -63,7 +63,7 @@ pub fn sys_write(
     if len == 0 {
         return Ok(0);
     }
-    let mut tmp_buf = RRefVec::<u8>::new_uninit(len);
+    let mut tmp_buf = DVec::<u8>::new_uninit(len);
     task_domain.copy_from_user(buf as usize, tmp_buf.as_mut_slice())?;
     let w = vfs.vfs_write(file, &tmp_buf, len);
     w.map(|x| x as isize)
@@ -83,8 +83,8 @@ pub fn sys_read(
         return Ok(0);
     }
     // let get_file_time = read_time_us();
-    // todo!(if RRefVec.len is 0, talc will panic)
-    let mut tmp_buf = RRefVec::<u8>::new_uninit(len);
+    // todo!(if DVec.len is 0, talc will panic)
+    let mut tmp_buf = DVec::<u8>::new_uninit(len);
     let r;
     (tmp_buf, r) = vfs.vfs_read(file, tmp_buf)?;
     // let read_file_time = read_time_us();
@@ -124,7 +124,7 @@ pub fn sys_readv(
             continue;
         }
         let len = iov.len;
-        let mut tmp_buf = RRefVec::<u8>::new_uninit(len);
+        let mut tmp_buf = DVec::<u8>::new_uninit(len);
         let r;
         (tmp_buf, r) = vfs.vfs_read(file, tmp_buf)?;
         task_domain.copy_to_user(base, &tmp_buf.as_slice()[..r])?;
@@ -155,7 +155,7 @@ pub fn sys_writev(
             continue;
         }
         let len = iov.len;
-        let mut tmp_buf = RRefVec::<u8>::new_uninit(len);
+        let mut tmp_buf = DVec::<u8>::new_uninit(len);
         task_domain.copy_from_user(base, tmp_buf.as_mut_slice())?;
         let w = vfs.vfs_write(file, &tmp_buf, len)?;
         count += w;
@@ -174,7 +174,7 @@ pub fn sys_fstatat(
     if path_ptr.is_null() {
         return Err(AlienError::EINVAL);
     }
-    let mut tmp_buf = RRefVec::<u8>::new_uninit(256);
+    let mut tmp_buf = DVec::<u8>::new_uninit(256);
     let len;
     (tmp_buf, len) = task_domain.read_string_from_user(path_ptr as usize, tmp_buf)?;
     let path = core::str::from_utf8(&tmp_buf.as_slice()[..len]).unwrap();
@@ -185,7 +185,7 @@ pub fn sys_fstatat(
     );
     let (_, current_root) = user_path_at(task_domain, dirfd as isize, path)?;
     // todo!(VfsFileStat == FileStat)
-    let attr = RRef::<VfsFileStat>::new_uninit();
+    let attr = DBox::<VfsFileStat>::new_uninit();
     let file = vfs.vfs_open(current_root, &tmp_buf, len, 0, 0)?;
     let stat = vfs.vfs_getattr(file, attr)?;
     let file_stat = FileStat::from(*stat);
@@ -219,7 +219,7 @@ pub fn sys_faccessat(
     }
     let mode = FaccessatMode::from_bits_truncate(mode as u32);
     let flag = FaccessatFlags::from_bits_truncate(flag as u32);
-    let mut tmp_buf = RRefVec::<u8>::new_uninit(256);
+    let mut tmp_buf = DVec::<u8>::new_uninit(256);
     let len;
     (tmp_buf, len) = task_domain.read_string_from_user(path, tmp_buf)?;
     let path = core::str::from_utf8(&tmp_buf.as_slice()[..len]).unwrap();
@@ -257,7 +257,7 @@ pub fn sys_fstat(
         return Err(AlienError::EINVAL);
     }
     let file = task_domain.get_fd(fd)?;
-    let attr = RRef::<VfsFileStat>::new_uninit();
+    let attr = DBox::<VfsFileStat>::new_uninit();
     let stat = vfs.vfs_getattr(file, attr)?;
     let file_stat = FileStat::from(*stat);
     task_domain.copy_to_user(statbuf, file_stat.as_bytes())?;
@@ -278,7 +278,7 @@ pub fn sys_utimensat(
         "<utimensat> dirfd: {:?} path_ptr: {:#x} times_ptr: {:#x}",
         dirfd as isize, path_ptr, times_ptr
     );
-    let tmp_buf = RRefVec::<u8>::new_uninit(256);
+    let tmp_buf = DVec::<u8>::new_uninit(256);
     let (tmp_buf, len) = task_domain.read_string_from_user(path_ptr, tmp_buf)?;
     let path = core::str::from_utf8(&tmp_buf.as_slice()[..len]).unwrap();
     info!("<utimensat>: path: {:?}", path);
@@ -329,7 +329,7 @@ pub fn sys_sendfile(
     if count > MAX_COUNT {
         count = MAX_COUNT;
     }
-    let mut shared_buf = RRefVec::new_uninit(512);
+    let mut shared_buf = DVec::new_uninit(512);
     let mut total = 0;
 
     let mut offset = if offset_ptr != 0 {
@@ -572,7 +572,7 @@ pub fn sys_getdents64(
     count: usize,
 ) -> AlienResult<isize> {
     let file = task_domain.get_fd(fd)?;
-    let mut tmp_buf = RRefVec::<u8>::new_uninit(count);
+    let mut tmp_buf = DVec::<u8>::new_uninit(count);
     let r;
     (tmp_buf, r) = vfs.vfs_readdir(file, tmp_buf)?;
     info!(
@@ -588,7 +588,7 @@ pub fn sys_chdir(
     task_domain: &Arc<dyn TaskDomain>,
     path: usize,
 ) -> AlienResult<isize> {
-    let mut tmp_buf = RRefVec::<u8>::new_uninit(128);
+    let mut tmp_buf = DVec::<u8>::new_uninit(128);
     let len;
     (tmp_buf, len) = task_domain.read_string_from_user(path, tmp_buf)?;
     let path = core::str::from_utf8(&tmp_buf.as_slice()[..len]).unwrap();
@@ -609,7 +609,7 @@ pub fn sys_getcwd(
         return Err(AlienError::EINVAL);
     }
     let (_, cwd) = task_domain.fs_info()?;
-    let mut tmp_buf = RRefVec::<u8>::new(0, 128);
+    let mut tmp_buf = DVec::<u8>::new(0, 128);
     let r;
     (tmp_buf, r) = vfs.vfs_get_path(cwd, tmp_buf)?;
     // let cwd = core::str::from_utf8(&tmp_buf.as_slice()[..r]).unwrap();
@@ -629,7 +629,7 @@ pub fn sys_mkdirat(
     path_ptr: usize,
     mode: usize,
 ) -> AlienResult<isize> {
-    let tmp_buf = RRefVec::<u8>::new_uninit(256);
+    let tmp_buf = DVec::<u8>::new_uninit(256);
     let (tmp_buf, len) = task_domain.read_string_from_user(path_ptr, tmp_buf)?;
     let mut mode = InodeMode::from_bits_truncate(mode as u32);
     let path = core::str::from_utf8(&tmp_buf.as_slice()[..len]).unwrap();

@@ -20,7 +20,7 @@ use interface::{
 };
 use log::info;
 use lru::LruCache;
-use rref::{RRef, RRefVec};
+use shared_heap::{DBox, DVec};
 
 struct PageCache(FrameTracker);
 
@@ -71,7 +71,7 @@ impl GenericBlockDevice {
             let mut frame = FrameTracker::new(1);
             for i in start_block..end_block {
                 let target_buf = &mut frame[(i - start_block) * 512..(i - start_block + 1) * 512];
-                let cache_slice = RRefVec::from_other_rvec_slice(target_buf);
+                let cache_slice = DVec::from_other_rvec_slice(target_buf);
                 let _cache_slice = device.read_block(i as u32, cache_slice).unwrap();
             }
             let cache = PageCache(frame);
@@ -82,7 +82,7 @@ impl GenericBlockDevice {
                 for i in start_block..end_block {
                     let target_buf =
                         &old_cache.0[(i - start_block) * 512..(i - start_block + 1) * 512];
-                    let tmp_buf = RRefVec::from_other_rvec_slice(target_buf);
+                    let tmp_buf = DVec::from_other_rvec_slice(target_buf);
                     device.write_block(i as u32, &tmp_buf).unwrap();
                     self.dirty.lock().retain(|&x| x != id);
                 }
@@ -98,7 +98,7 @@ impl GenericBlockDevice {
 
 impl Basic for GenericBlockDevice {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -127,7 +127,7 @@ impl CacheBlkDeviceDomain for GenericBlockDevice {
         }
     }
 
-    fn read(&self, offset: u64, mut buf: RRefVec<u8>) -> AlienResult<RRefVec<u8>> {
+    fn read(&self, offset: u64, mut buf: DVec<u8>) -> AlienResult<DVec<u8>> {
         let mut page_id = offset as usize / FRAME_SIZE;
         let mut offset = offset as usize % FRAME_SIZE;
         let len = buf.len();
@@ -149,7 +149,7 @@ impl CacheBlkDeviceDomain for GenericBlockDevice {
         Ok(buf)
     }
 
-    fn write(&self, offset: u64, buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write(&self, offset: u64, buf: &DVec<u8>) -> AlienResult<usize> {
         let mut page_id = offset as usize / FRAME_SIZE;
         let mut offset = offset as usize % FRAME_SIZE;
         let len = buf.len();

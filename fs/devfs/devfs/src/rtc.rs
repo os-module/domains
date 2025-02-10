@@ -7,7 +7,7 @@ use basic::constants::{
 };
 use interface::{RtcDomain, TaskDomain};
 use pod::Pod;
-use rref::{RRef, RRefVec};
+use shared_heap::{DBox, DVec};
 use vfscore::{
     error::VfsError,
     file::VfsFile,
@@ -34,8 +34,8 @@ impl RTCDevice {
 }
 
 impl VfsFile for RTCDevice {
-    fn read_at(&self, _offset: u64, mut buf: RRefVec<u8>) -> VfsResult<(RRefVec<u8>, usize)> {
-        let mut time = RRef::new(RtcTime::default());
+    fn read_at(&self, _offset: u64, mut buf: DVec<u8>) -> VfsResult<(DVec<u8>, usize)> {
+        let mut time = DBox::new(RtcTime::default());
         time = self.device.read_time(time).unwrap();
         let str = format!("{:?}", time.deref());
         let bytes = str.as_bytes();
@@ -43,14 +43,14 @@ impl VfsFile for RTCDevice {
         buf.as_mut_slice()[..min_len].copy_from_slice(&bytes[..min_len]);
         Ok((buf, min_len))
     }
-    fn write_at(&self, _offset: u64, _buf: &RRefVec<u8>) -> VfsResult<usize> {
+    fn write_at(&self, _offset: u64, _buf: &DVec<u8>) -> VfsResult<usize> {
         todo!()
     }
     fn ioctl(&self, cmd: u32, arg: usize) -> VfsResult<usize> {
         let cmd = TeletypeCommand::try_from(cmd).map_err(|_| VfsError::Invalid)?;
         match cmd {
             TeletypeCommand::RTC_RD_TIME => {
-                let mut time = RRef::new(RtcTime::default());
+                let mut time = DBox::new(RtcTime::default());
                 time = self.device.read_time(time).unwrap();
                 self.task_domain
                     .copy_to_user(arg, time.deref().as_bytes())

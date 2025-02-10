@@ -23,7 +23,7 @@ use interface::{
     define_unwind_for_VfsDomain, Basic, DomainType, InodeID, NetDomain, SocketID, VfsDomain,
 };
 use log::debug;
-use rref::{RRef, RRefVec};
+use shared_heap::{DBox, DVec};
 use spin::{Lazy, Once};
 use storage::{DataStorageHeap, StorageBuilder};
 use vfscore::{
@@ -101,7 +101,7 @@ struct VfsDomainImpl;
 
 impl Basic for VfsDomainImpl {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -136,7 +136,7 @@ impl VfsDomain for VfsDomainImpl {
     fn vfs_open(
         &self,
         root: InodeID,
-        path: &RRefVec<u8>,
+        path: &DVec<u8>,
         path_len: usize,
         mode: u32,
         open_flags: usize,
@@ -166,8 +166,8 @@ impl VfsDomain for VfsDomainImpl {
     fn vfs_getattr(
         &self,
         inode: InodeID,
-        mut attr: RRef<VfsFileStat>,
-    ) -> AlienResult<RRef<VfsFileStat>> {
+        mut attr: DBox<VfsFileStat>,
+    ) -> AlienResult<DBox<VfsFileStat>> {
         let vfs_attr = get_file(inode).unwrap().get_attr()?;
         *attr = vfs_attr;
         Ok(attr)
@@ -176,13 +176,13 @@ impl VfsDomain for VfsDomainImpl {
         &self,
         inode: InodeID,
         offset: u64,
-        buf: RRefVec<u8>,
-    ) -> AlienResult<(RRefVec<u8>, usize)> {
+        buf: DVec<u8>,
+    ) -> AlienResult<(DVec<u8>, usize)> {
         let file = get_file(inode).unwrap();
         let res = file.read_at(offset, buf)?;
         Ok(res)
     }
-    fn vfs_read(&self, inode: InodeID, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn vfs_read(&self, inode: InodeID, buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         let file = get_file(inode).unwrap();
         let res = file.read(buf)?;
         Ok(res)
@@ -191,7 +191,7 @@ impl VfsDomain for VfsDomainImpl {
         &self,
         inode: InodeID,
         offset: u64,
-        buf: &RRefVec<u8>,
+        buf: &DVec<u8>,
         _w: usize,
     ) -> AlienResult<usize> {
         let file = get_file(inode).unwrap();
@@ -199,11 +199,11 @@ impl VfsDomain for VfsDomainImpl {
         Ok(res)
     }
 
-    fn vfs_write(&self, inode: InodeID, buf: &RRefVec<u8>, w_len: usize) -> AlienResult<usize> {
+    fn vfs_write(&self, inode: InodeID, buf: &DVec<u8>, w_len: usize) -> AlienResult<usize> {
         let file = get_file(inode).unwrap();
         if buf.len() != w_len {
             println_color!(31, "vfs_write: buf.len() != w_len");
-            let buf = RRefVec::from_slice(&buf.as_slice()[..w_len]);
+            let buf = DVec::from_slice(&buf.as_slice()[..w_len]);
             let res = file.write(&buf)?;
             Ok(res)
         } else {
@@ -230,21 +230,13 @@ impl VfsDomain for VfsDomainImpl {
         let res = file.inode().inode_type();
         Ok(res)
     }
-    fn vfs_readdir(
-        &self,
-        inode: InodeID,
-        mut buf: RRefVec<u8>,
-    ) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn vfs_readdir(&self, inode: InodeID, mut buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         let file = get_file(inode).unwrap();
         let res = file.readdir(buf.as_mut_slice())?;
         Ok((buf, res))
     }
 
-    fn vfs_get_path(
-        &self,
-        inode: InodeID,
-        mut buf: RRefVec<u8>,
-    ) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn vfs_get_path(&self, inode: InodeID, mut buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         let file = get_file(inode).unwrap();
         let path = file.dentry().path();
         let path = path.as_bytes();
@@ -347,7 +339,7 @@ impl VfsDomain for VfsDomainImpl {
         inode: InodeID,
         op: u32,
         fd: usize,
-        event: RRef<EpollEvent>,
+        event: DBox<EpollEvent>,
     ) -> AlienResult<()> {
         let file = get_file(inode).unwrap();
         let op = EpollCtlOp::try_from(op).unwrap();

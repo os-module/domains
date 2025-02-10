@@ -3,7 +3,7 @@ use alloc::sync::Arc;
 use basic::{println, AlienError, AlienResult};
 use interface::{DomainTypeRaw, TaskDomain, VfsDomain};
 use log::warn;
-use rref::{RRef, RRefVec};
+use shared_heap::{DBox, DVec};
 use vfscore::utils::VfsFileStat;
 
 pub fn sys_load_domain(
@@ -17,14 +17,14 @@ pub fn sys_load_domain(
     if len == 0 {
         return Err(AlienError::EINVAL);
     }
-    let mut tmp_buf = RRefVec::<u8>::new_uninit(len);
+    let mut tmp_buf = DVec::<u8>::new_uninit(len);
     task_domain.copy_from_user(domain_name, tmp_buf.as_mut_slice())?;
     let domain_name = core::str::from_utf8(tmp_buf.as_slice()).unwrap();
     let file = task_domain.get_fd(fd)?;
-    let attr = RRef::<VfsFileStat>::new_uninit();
+    let attr = DBox::<VfsFileStat>::new_uninit();
     let attr = vfs_domain.vfs_getattr(file, attr)?;
     let size = attr.st_size;
-    let buf = RRefVec::new_uninit(size as usize);
+    let buf = DVec::new_uninit(size as usize);
     let ty = DomainTypeRaw::try_from(ty).map_err(|_| AlienError::EINVAL)?;
     warn!(
         "<sys_load_domain> domain_name: {:?}, ty:{:?}, size: {}KB",
@@ -49,10 +49,10 @@ pub fn sys_replace_domain(
     if new_len == 0 && (old_len == 0 && ty == 0) {
         return Err(AlienError::EINVAL);
     }
-    let mut tmp_buf = RRefVec::<u8>::new_uninit(old_len);
+    let mut tmp_buf = DVec::<u8>::new_uninit(old_len);
     task_domain.copy_from_user(old_domain_name, tmp_buf.as_mut_slice())?;
     let old_domain_name = core::str::from_utf8(tmp_buf.as_slice()).unwrap();
-    let mut tmp_buf = RRefVec::<u8>::new_uninit(new_len);
+    let mut tmp_buf = DVec::<u8>::new_uninit(new_len);
     task_domain.copy_from_user(new_domain_name, tmp_buf.as_mut_slice())?;
     let new_domain_name = core::str::from_utf8(tmp_buf.as_slice()).unwrap();
     let ty = DomainTypeRaw::try_from(ty).map_err(|_| AlienError::EINVAL)?;

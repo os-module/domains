@@ -1,6 +1,6 @@
 use alloc::sync::Arc;
 
-use rref::RRefVec;
+use shared_heap::DVec;
 use vfscore::{dentry::VfsDentry, utils::VfsNodeType, VfsResult};
 
 ///
@@ -34,11 +34,11 @@ pub fn init_ramfs(root_dt: &Arc<dyn VfsDentry>) -> VfsResult<()> {
     let localtime = etc.create("localtime", VfsNodeType::File, "rw-r--r--".into(), None)?;
     let adjtime = etc.create("adjtime", VfsNodeType::File, "rw-r--r--".into(), None)?;
 
-    let data = RRefVec::from_other_rvec_slice(b"root:x:0:0:root:/root:/bin/bash\n");
+    let data = DVec::from_other_rvec_slice(b"root:x:0:0:root:/root:/bin/bash\n");
     passwd.write_at(0, &data)?;
-    let utc = RRefVec::from_other_rvec_slice(UTC);
+    let utc = DVec::from_other_rvec_slice(UTC);
     localtime.write_at(0, &utc)?;
-    let rtc_time = RRefVec::from_other_rvec_slice(RTC_TIME.as_bytes());
+    let rtc_time = DVec::from_other_rvec_slice(RTC_TIME.as_bytes());
     adjtime.write_at(0, &rtc_time)?;
 
     root_inode.create("dev", VfsNodeType::Dir, "rwxr-xr-x".into(), None)?;

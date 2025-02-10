@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 basic = { path = "../../../../domain-lib/basic", features = ["task"]  }
 interface = { path = "../../../../domain-lib/interface" }
-rref = { path = "../../../../domain-lib/rref" }
+shared_heap = { path = "../../../../domain-lib/shared_heap" }
 task_meta = { path = "../../../../domain-lib/task_meta" }
 common_scheduler = { path = "../../../common_lib/common_scheduler" }
 storage = { path = "../../../../domain-lib/storage", features = ["impl"] }

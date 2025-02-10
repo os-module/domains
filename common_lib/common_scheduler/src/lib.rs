@@ -9,7 +9,7 @@ use alloc::boxed::Box;
 
 use basic::{println, AlienResult};
 use interface::{define_unwind_for_SchedulerDomain, Basic, SchedulerDomain};
-use rref::RRef;
+use shared_heap::DBox;
 pub use scheduler::Scheduler;
 use task_meta::TaskSchedulingInfo;
 
@@ -28,7 +28,7 @@ impl CommonSchedulerDomain {
 
 impl Basic for CommonSchedulerDomain {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -38,12 +38,12 @@ impl SchedulerDomain for CommonSchedulerDomain {
         Ok(())
     }
 
-    fn add_task(&self, scheduling_info: RRef<TaskSchedulingInfo>) -> AlienResult<()> {
+    fn add_task(&self, scheduling_info: DBox<TaskSchedulingInfo>) -> AlienResult<()> {
         scheduler::add_task(scheduling_info);
         Ok(())
     }
 
-    fn fetch_task(&self, info: RRef<TaskSchedulingInfo>) -> AlienResult<RRef<TaskSchedulingInfo>> {
+    fn fetch_task(&self, info: DBox<TaskSchedulingInfo>) -> AlienResult<DBox<TaskSchedulingInfo>> {
         Ok(scheduler::fetch_task(info))
     }
 }

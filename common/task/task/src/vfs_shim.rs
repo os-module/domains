@@ -5,7 +5,7 @@ use basic::{
     AlienError, AlienResult,
 };
 use interface::{InodeID, VfsDomain, VFS_ROOT_ID, VFS_STDIN_ID, VFS_STDOUT_ID};
-use rref::{RRef, RRefVec};
+use shared_heap::{DBox, DVec};
 use spin::{Lazy, Once};
 use vfscore::utils::VfsFileStat;
 
@@ -35,13 +35,13 @@ impl ShimFile {
         self.id
     }
 
-    fn get_attr(&self) -> AlienResult<RRef<VfsFileStat>> {
-        let attr = RRef::<VfsFileStat>::new_uninit();
+    fn get_attr(&self) -> AlienResult<DBox<VfsFileStat>> {
+        let attr = DBox::<VfsFileStat>::new_uninit();
         let res = VFS_DOMAIN.get().unwrap().vfs_getattr(self.id, attr);
         res
     }
 
-    fn read_at(&self, offset: u64, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn read_at(&self, offset: u64, buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         let res = VFS_DOMAIN.get().unwrap().vfs_read_at(self.id, offset, buf);
         res
     }
@@ -60,7 +60,7 @@ pub fn read_all(file_name: &str, buf: &mut Vec<u8>) -> bool {
     } else {
         user_path_at(AT_FDCWD, file_name).unwrap()
     };
-    let name = RRefVec::from_slice(file_name.as_bytes());
+    let name = DVec::from_slice(file_name.as_bytes());
     let res = VFS_DOMAIN.get().unwrap().vfs_open(
         path.1,
         &name,
@@ -75,7 +75,7 @@ pub fn read_all(file_name: &str, buf: &mut Vec<u8>) -> bool {
     let shim_file = ShimFile::new(res.unwrap());
     let size = shim_file.get_attr().unwrap().st_size;
     let mut offset = 0;
-    let mut tmp = RRefVec::new_uninit(1024);
+    let mut tmp = DVec::new_uninit(1024);
     let mut res;
     while offset < size {
         (tmp, res) = shim_file.read_at(offset, tmp).unwrap();

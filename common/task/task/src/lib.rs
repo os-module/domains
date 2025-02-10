@@ -23,7 +23,7 @@ use interface::{
     define_unwind_for_TaskDomain, Basic, DomainType, InodeID, TaskDomain, TmpHeapInfo,
 };
 use memory_addr::VirtAddr;
-use rref::{RRef, RRefVec};
+use shared_heap::{DBox, DVec};
 
 use crate::{processor::current_task, vfs_shim::ShimFile};
 
@@ -44,7 +44,7 @@ impl TaskDomainImpl {
 
 impl Basic for TaskDomainImpl {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -73,7 +73,7 @@ impl TaskDomain for TaskDomainImpl {
         Ok(task.trap_frame_phy_ptr().as_usize())
     }
 
-    fn heap_info(&self, mut tmp_heap_info: RRef<TmpHeapInfo>) -> AlienResult<RRef<TmpHeapInfo>> {
+    fn heap_info(&self, mut tmp_heap_info: DBox<TmpHeapInfo>) -> AlienResult<DBox<TmpHeapInfo>> {
         let task = current_task().unwrap();
         let guard = task.heap.lock();
         *tmp_heap_info = TmpHeapInfo {
@@ -126,8 +126,8 @@ impl TaskDomain for TaskDomainImpl {
     fn read_string_from_user(
         &self,
         src: usize,
-        mut buf: RRefVec<u8>,
-    ) -> AlienResult<(RRefVec<u8>, usize)> {
+        mut buf: DVec<u8>,
+    ) -> AlienResult<(DVec<u8>, usize)> {
         let task = current_task().unwrap();
         let str = task.read_string_from_user(VirtAddr::from(src))?;
         let len = str.as_bytes().len();

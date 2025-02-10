@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 basic = { path = "../../../../domain-lib/basic" }
 interface = { path = "../../../../domain-lib/interface" }
-rref = { path = "../../../../domain-lib/rref" }
+shared_heap = { path = "../../../../domain-lib/shared_heap" }
 
 pod = { git = "https://github.com/asterinas/pod", rev = "d7dba56" }
 vfscore = { path = "../../../../rvfs-ref/vfscore-ref", package = "vfscore-ref" , features = ["linux_error"] }

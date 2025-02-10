@@ -15,7 +15,7 @@ use basic::{
     AlienResult,
 };
 use interface::{define_unwind_for_UartDomain, Basic, DeviceBase, UartDomain};
-use rref::RRefVec;
+use shared_heap::DVec;
 
 use crate::vf2_uart::Uart8250;
 #[derive(Default)]
@@ -37,7 +37,7 @@ impl Debug for Uart8250Domain {
 
 impl Basic for Uart8250Domain {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -61,7 +61,7 @@ impl UartDomain for Uart8250Domain {
         self.uart.get_must().getc()
     }
 
-    fn put_bytes(&self, buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn put_bytes(&self, buf: &DVec<u8>) -> AlienResult<usize> {
         let uart = self.uart.get_must();
         for i in 0..buf.len() {
             uart.putc(buf[i])?;

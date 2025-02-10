@@ -7,7 +7,7 @@ edition = "2021"
 basic = { path = "../../../domain-lib/basic" }
 vfscore = { path = "../../../rvfs-ref/vfscore-ref", package = "vfscore-ref", features = ["linux_error"] }
 unifs = { path = "../../../rvfs-ref/unifs-ref", package = "unifs-ref" }
-rref = { path = "../../../domain-lib/rref" }
+shared_heap = { path = "../../../domain-lib/shared_heap" }
 
 interface = { path = "../../../domain-lib/interface" }
 log = "0"

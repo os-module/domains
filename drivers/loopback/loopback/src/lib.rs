@@ -6,12 +6,12 @@ use core::{fmt::Debug, ops::Range};
 
 use basic::{sync::Mutex, AlienResult};
 use interface::{define_unwind_for_NetDeviceDomain, Basic, DeviceBase, NetDeviceDomain};
-use rref::RRefVec;
+use shared_heap::DVec;
 
 #[derive(Debug)]
 pub struct LoopBackNetDevice {
     mac_address: [u8; 6],
-    packet: Mutex<VecDeque<RRefVec<u8>>>,
+    packet: Mutex<VecDeque<DVec<u8>>>,
 }
 
 impl Default for LoopBackNetDevice {
@@ -37,7 +37,7 @@ impl DeviceBase for LoopBackNetDevice {
 
 impl Basic for LoopBackNetDevice {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -66,13 +66,13 @@ impl NetDeviceDomain for LoopBackNetDevice {
         Ok(128)
     }
 
-    fn transmit(&self, tx_buf: &RRefVec<u8>) -> AlienResult<()> {
-        let packet = RRefVec::from_slice(tx_buf.as_slice());
+    fn transmit(&self, tx_buf: &DVec<u8>) -> AlienResult<()> {
+        let packet = DVec::from_slice(tx_buf.as_slice());
         self.packet.lock().push_back(packet);
         Ok(())
     }
 
-    fn receive(&self, rx_buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn receive(&self, rx_buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         let mut packet = self.packet.lock();
         if let Some(p) = packet.pop_front() {
             let len = p.len();

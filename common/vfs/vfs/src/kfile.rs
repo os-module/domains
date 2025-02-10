@@ -11,7 +11,7 @@ use basic::{
 };
 use downcast_rs::{impl_downcast, DowncastSync};
 use interface::InodeID;
-use rref::RRefVec;
+use shared_heap::DVec;
 use storage::{DataStorageHeap, StorageBuilder};
 use vfs_common::meta::KernelFileMeta;
 use vfscore::{
@@ -85,12 +85,12 @@ impl KernelFile {
 }
 
 pub trait File: DowncastSync + Debug {
-    fn read(&self, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)>;
-    fn write(&self, buf: &RRefVec<u8>) -> AlienResult<usize>;
-    fn read_at(&self, _offset: u64, _buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn read(&self, buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)>;
+    fn write(&self, buf: &DVec<u8>) -> AlienResult<usize>;
+    fn read_at(&self, _offset: u64, _buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         Err(LinuxErrno::ENOSYS)
     }
-    fn write_at(&self, _offset: u64, _buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write_at(&self, _offset: u64, _buf: &DVec<u8>) -> AlienResult<usize> {
         Err(LinuxErrno::ENOSYS)
     }
     fn flush(&self) -> AlienResult<()> {
@@ -128,19 +128,19 @@ pub trait File: DowncastSync + Debug {
 impl_downcast!(sync  File);
 
 impl File for KernelFile {
-    fn read(&self, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn read(&self, buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         let pos = self.meta.lock().pos;
         let (buf, read) = self.read_at(pos, buf)?;
         self.meta.lock().pos += read as u64;
         Ok((buf, read))
     }
-    fn write(&self, buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write(&self, buf: &DVec<u8>) -> AlienResult<usize> {
         let pos = self.meta.lock().pos;
         let write = self.write_at(pos, buf)?;
         self.meta.lock().pos += write as u64;
         Ok(write)
     }
-    fn read_at(&self, offset: u64, buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn read_at(&self, offset: u64, buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         if buf.is_empty() {
             return Ok((buf, 0));
         }
@@ -153,7 +153,7 @@ impl File for KernelFile {
         Ok(res)
     }
 
-    fn write_at(&self, offset: u64, buf: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write_at(&self, offset: u64, buf: &DVec<u8>) -> AlienResult<usize> {
         if buf.is_empty() {
             return Ok(0);
         }

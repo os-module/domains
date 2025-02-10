@@ -15,7 +15,7 @@ use basic::{
     AlienResult,
 };
 use interface::{define_unwind_for_NetDeviceDomain, Basic, DeviceBase, NetDeviceDomain};
-use rref::RRefVec;
+use shared_heap::DVec;
 use virtio_drivers::{device::net::VirtIONet, transport::mmio::MmioTransport};
 use virtio_mmio_common::{to_alien_err, HalImpl, SafeIORW};
 
@@ -35,7 +35,7 @@ impl Debug for VirtIoNetDomain {
 
 impl Basic for VirtIoNetDomain {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -92,7 +92,7 @@ impl NetDeviceDomain for VirtIoNetDomain {
         Ok(NET_QUEUE_SIZE)
     }
 
-    fn transmit(&self, tx_buf: &RRefVec<u8>) -> AlienResult<()> {
+    fn transmit(&self, tx_buf: &DVec<u8>) -> AlienResult<()> {
         self.nic
             .get_must()
             .lock()
@@ -100,7 +100,7 @@ impl NetDeviceDomain for VirtIoNetDomain {
             .map_err(to_alien_err)
     }
 
-    fn receive(&self, mut rx_buf: RRefVec<u8>) -> AlienResult<(RRefVec<u8>, usize)> {
+    fn receive(&self, mut rx_buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         let len = self
             .nic
             .get_must()

@@ -7,14 +7,14 @@ use core::fmt::Debug;
 
 use basic::AlienResult;
 use interface::{define_unwind_for_EmptyDeviceDomain, Basic, EmptyDeviceDomain};
-use rref::RRefVec;
+use shared_heap::DVec;
 
 #[derive(Debug)]
 pub struct NullDeviceDomainImpl;
 
 impl Basic for NullDeviceDomainImpl {
     fn domain_id(&self) -> u64 {
-        rref::domain_id()
+        shared_heap::domain_id()
     }
 }
 
@@ -23,11 +23,11 @@ impl EmptyDeviceDomain for NullDeviceDomainImpl {
         Ok(())
     }
 
-    fn read(&self, mut data: RRefVec<u8>) -> AlienResult<RRefVec<u8>> {
+    fn read(&self, mut data: DVec<u8>) -> AlienResult<DVec<u8>> {
         data.as_mut_slice().fill(0);
         Ok(data)
     }
-    fn write(&self, data: &RRefVec<u8>) -> AlienResult<usize> {
+    fn write(&self, data: &DVec<u8>) -> AlienResult<usize> {
         Ok(data.len())
     }
 }
