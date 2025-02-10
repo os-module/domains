@@ -185,10 +185,10 @@ pub const MAX_BLOCK_CACHE_FRAMES: usize = 1024 * 4 * 4;
 
 define_unwind_for_CacheBlkDeviceDomain!(GenericBlockDevice);
 
-// pub fn main() -> Box<dyn CacheBlkDeviceDomain> {
-//     Box::new(UnwindWrap::new(GenericBlockDevice::new(
-//         MAX_BLOCK_CACHE_FRAMES,
-//     )))
-// }
+pub fn main() -> Box<dyn CacheBlkDeviceDomain> {
+    Box::new(UnwindWrap::new(GenericBlockDevice::new(
+        MAX_BLOCK_CACHE_FRAMES,
+    )))
+}
 
-pub use frame::main;
+// pub use frame::main;

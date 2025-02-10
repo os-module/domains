@@ -15,4 +15,5 @@ virtio-drivers = { git = "https://github.com/os-module/safe-virtio-drivers.git" 
 log = "0"
 
 [features]
+default = []
 crash = []
