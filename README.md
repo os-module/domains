@@ -1,5 +1,15 @@
 # Domains
 
+Domains are isolated components in AlienOS. Each domain is a separate Rust project that can be loaded/unloaded/update at runtime. 
+Domains can be categorized into three types: Common, Fs, and Driver. 
+
+- Common domains are used to provide common functionalities, such as syscall, memory, and process management. 
+- Fs domains are used to provide file system functionalities, such as devfs, dynfs, ramfs, fat-vfs, and domainfs. 
+- Driver domains are used to provide device driver functionalities, such as uart8250, virtio-net, visionfive2-sd, plic, and rtc.
+
+
+See [AlienOS](https://github.com/Godones/Alien/tree/isolation) to know how to load/unload/update a domain.
+
 ## Introduction
 
 
