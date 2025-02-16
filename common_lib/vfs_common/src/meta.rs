@@ -34,6 +34,6 @@ impl KernelFileMeta {
 
 impl Drop for KernelFileMeta {
     fn drop(&mut self) {
-        log::error!("drop KernelFileMeta");
+        log::info!("drop KernelFileMeta");
     }
 }

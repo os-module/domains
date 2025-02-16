@@ -1,6 +1,6 @@
 use alloc::{sync::Arc, vec::Vec};
 
-use basic::{constants::task::WaitOptions, println, AlienError, AlienResult};
+use basic::{constants::task::WaitOptions, println, println_color, AlienError, AlienResult};
 use memory_addr::VirtAddr;
 use task_meta::TaskStatus;
 
@@ -12,10 +12,10 @@ pub fn do_wait4(
     options: u32,
     _rusage: usize,
 ) -> AlienResult<isize> {
+    let wait_options = WaitOptions::from_bits(options).unwrap();
     loop {
         let task = current_task().unwrap();
         let wait_task = filter_exit_task(&task, pid)?;
-        let wait_options = WaitOptions::from_bits(options).unwrap();
         if let Some(wait_task) = wait_task {
             let tid = wait_task.tid();
             let pid = wait_task.pid();
@@ -23,11 +23,12 @@ pub fn do_wait4(
             let is_task_exit = basic::is_task_exit(tid).unwrap();
             if status == TaskStatus::Terminated && is_task_exit {
                 let exit_code = wait_task.exit_code();
+                if exit_code_ptr != 0 {
+                    // println_color!(31, "write exit code {} to pid {}", exit_code, pid);
+                    task.write_val_to_user(VirtAddr::from(exit_code_ptr), &exit_code)?;
+                }
                 if wait_options.contains(WaitOptions::WNOWAIT) {
                     // recycle the task later
-                    if exit_code_ptr != 0 {
-                        task.write_val_to_user(VirtAddr::from(exit_code_ptr), &exit_code)?;
-                    }
                     assert_eq!(pid, tid);
                 } else {
                     // recycle the task now

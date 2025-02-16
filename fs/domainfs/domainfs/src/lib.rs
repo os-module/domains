@@ -34,7 +34,14 @@ type DomainFsDomain = GenericFsDomain;
 
 pub fn main() -> Box<dyn FsDomain> {
     let root = domain_fs_root();
-    let domain_fs = Arc::new(CustomFs::new(CommonFsProviderImpl, "domainfs", root));
+    let domain_fs = Arc::new(CustomFs::new(
+        CommonFsProviderImpl,
+        "domainfs",
+        root.clone(),
+    ));
+    let magic = domain_fs.magic();
+
+    root.set_magic(magic);
     Box::new(UnwindWrap::new(DomainFsDomain::new(
         domain_fs,
         "domainfs".to_string(),

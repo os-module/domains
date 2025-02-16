@@ -37,6 +37,8 @@ pub struct RootShimDentry {
     path: Mutex<String>,
     children: Mutex<BTreeMap<String, Arc<dyn VfsDentry>>>,
     name: Mutex<String>,
+    #[allow(dead_code)]
+    sb: Arc<dyn VfsSuperBlock>,
 }
 
 impl RootShimDentry {
@@ -51,7 +53,7 @@ impl RootShimDentry {
             inode_id,
             fs_domain_ident.clone(),
         ));
-        let sb = Arc::new(ShimSuperBlock::new(fs_domain.clone(), inode.clone(), fs));
+        let sb = Arc::new(ShimSuperBlock::new(fs_domain.clone(), inode.clone(), fs, fs_domain.fs_magic().unwrap()));
         inode.set_super_block(Arc::downgrade(&sb));
         let this = Arc::new(Self {
             fs_domain,
@@ -64,6 +66,7 @@ impl RootShimDentry {
             path: Mutex::new(String::from("")),
             children: Mutex::new(BTreeMap::new()),
             name: Mutex::new(String::from("")),
+            sb
         });
         let weak = Arc::downgrade(&(this.clone() as Arc<dyn VfsDentry>));
         this.mount_point_this.call_once(|| weak);
@@ -78,6 +81,7 @@ impl RootShimDentry {
         let inode_id = inode.ino;
         let fs_domain = inode.fs_domain.clone();
         let fs_domain_ident = inode.fs_domain_ident.clone();
+        let sb = inode.sb.lock().as_ref().unwrap().clone();
         let shim_dentry = Arc::new(Self {
             fs_domain,
             inode_id,
@@ -89,6 +93,7 @@ impl RootShimDentry {
             path: Mutex::new(String::from("")),
             children: Mutex::new(BTreeMap::new()),
             name: Mutex::new(String::from("")),
+            sb: sb.upgrade().unwrap()
         });
         let weak = Arc::downgrade(&(shim_dentry.clone() as Arc<dyn VfsDentry>));
         shim_dentry.mount_point_this.call_once(|| weak);
@@ -474,6 +479,7 @@ pub struct ShimSuperBlock {
     fs_domain: Arc<dyn FsDomain>,
     root_inode: Arc<dyn VfsInode>,
     fs: Arc<ShimFs>,
+    magic:u128
 }
 
 impl ShimSuperBlock {
@@ -481,11 +487,13 @@ impl ShimSuperBlock {
         fs_domain: Arc<dyn FsDomain>,
         root_inode: Arc<dyn VfsInode>,
         fs: Arc<ShimFs>,
+        magic:u128,
     ) -> Self {
         Self {
             fs_domain,
             root_inode,
             fs,
+            magic
         }
     }
 }
@@ -512,6 +520,9 @@ impl VfsSuperBlock for ShimSuperBlock {
 
     fn root_inode(&self) -> VfsResult<Arc<dyn VfsInode>> {
         Ok(self.root_inode.clone())
+    }
+    fn magic(&self) -> u128 {
+        self.magic
     }
 }
 pub struct ShimFs {

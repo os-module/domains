@@ -1,6 +1,6 @@
 use alloc::sync::Arc;
 
-use basic::{println, AlienResult};
+use basic::{constants::ipc::FutexOp, println, println_color, AlienResult};
 use memory_addr::VirtAddr;
 use ptable::VmIo;
 use task_meta::TaskStatus;
@@ -30,12 +30,14 @@ pub fn do_exit(exit_code: i32) -> AlienResult<isize> {
     // global_logoff_signals(task.get_tid() as usize);
 
     let clear_child_tid = task.inner().clear_child_tid;
+    // let tid = task.tid();
+    // println_color!(31,"[{}] exit wake futex on {:#x}",tid, clear_child_tid);
     if clear_child_tid != 0 {
-        info!("exit wake futex on {:#x}", clear_child_tid);
         task.address_space
             .lock()
             .write_val(VirtAddr::from(clear_child_tid), &0u32)
             .unwrap();
+        let _ = super::futex::futex(clear_child_tid, FutexOp::FutexWake as u32, 1, 0, 0, 0);
     } else {
         info!("exit clear_child_tid is 0");
     }

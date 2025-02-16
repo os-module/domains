@@ -12,15 +12,22 @@ pub struct FutexWaiter {
     wait_time: Option<usize>,
     /// 超时事件的标志位，标识该进程对于 futex 等待是否超时
     timeout_flag: Arc<Mutex<bool>>,
+    bitset: u32,
 }
 
 impl FutexWaiter {
     /// 创建一个新的 `FutexWaiter` 保存等待在某 futex 上的一个进程 有关等待的相关信息
-    pub fn new(task_tid: usize, wait_time: Option<usize>, timeout_flag: Arc<Mutex<bool>>) -> Self {
+    pub fn new(
+        task_tid: usize,
+        wait_time: Option<usize>,
+        timeout_flag: Arc<Mutex<bool>>,
+        bitset: u32,
+    ) -> Self {
         Self {
             task: Some(task_tid),
             wait_time,
             timeout_flag,
+            bitset,
         }
     }
 
@@ -49,18 +56,19 @@ impl FutexWaitManager {
         self.map.entry(futex).or_insert(Vec::new()).push(waiter);
     }
     /// 唤醒 futex 上的至多 num 个等待的进程
-    pub fn wake(&mut self, futex: usize, num: usize) -> AlienResult<usize> {
+    pub fn wake(&mut self, futex: usize, num: usize, bitset: u32) -> AlienResult<usize> {
         if let Some(waiters) = self.map.get_mut(&futex) {
-            // println_color!(32,"there are {} waiters, wake {}", waiters.len(), num);
             let min_index = min(num, waiters.len());
+            let mut count = 0;
             for i in 0..min_index {
-                let tid = waiters[i].wake();
-                basic::wake_up_wait_task(tid)?;
+                if (waiters[i].bitset & bitset) != 0 {
+                    let tid = waiters[i].wake();
+                    basic::wake_up_wait_task(tid)?;
+                    waiters.remove(i);
+                    count += 1;
+                }
             }
-            // delete waiters
-            waiters.drain(0..min_index);
-            // println_color!(32,"wake {} tasks", min_index);
-            Ok(min_index)
+            Ok(count)
         } else {
             // println_color!(31,"futex {} not found", futex);
             Err(AlienError::EINVAL)

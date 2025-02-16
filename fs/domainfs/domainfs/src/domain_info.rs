@@ -17,7 +17,7 @@ use vfscore::{
 
 use crate::{custom_inode::CustomRootInode, DOMAIN_INFO};
 
-pub fn domain_fs_root() -> Arc<dyn VfsInode> {
+pub fn domain_fs_root() -> Arc<CustomRootInode> {
     let root = CustomRootInode::new();
     root.insert_inode("domain-type".to_string(), Arc::new(DomainTyInfoDir));
     root.insert_inode("domains".to_string(), Arc::new(DomainFileInfoDir));

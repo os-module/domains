@@ -184,7 +184,7 @@ pub fn sys_recvfrom(
     let (fd, buf, len, flags, addr, addr_len) =
         (args[0], args[1], args[2], args[3], args[4], args[5]);
     error!(
-        "<recv_from> fd: {}, buf: {:#x}, len: {}, flags: {}, addr: {:#x}, addr_len: {}",
+        "<recv_from> fd: {}, buf: {:#x}, len: {}, flags: {}, addr: {:#x}, addr_len: {:#x}",
         fd, buf, len, flags, addr, addr_len
     );
     let inode_id = task_domain.get_fd(fd)?;
@@ -206,7 +206,7 @@ pub fn sys_recvfrom(
                     if addr != 0 {
                         let raw = SocketAddrInRaw::from(*arg_tuple.addr);
                         task_domain.write_val_to_user(addr, &raw)?;
-                        let len = core::mem::size_of::<SocketAddrInRaw>();
+                        let len = core::mem::size_of::<SocketAddrInRaw>() as u32;
                         task_domain.write_val_to_user(addr_len, &len)?;
                     }
                     return Ok(arg_tuple.len as isize);

@@ -4,13 +4,16 @@ use alloc::{
     vec::Vec,
 };
 
-use basic::sync::Mutex;
+use basic::sync::{Mutex, Once};
 use vfscore::{
     error::VfsError,
     file::VfsFile,
+    fstype::VfsFsType,
     inode::VfsInode,
+    superblock::{SuperType, VfsSuperBlock},
     utils::{
-        VfsDirEntry, VfsFileStat, VfsInodeMode, VfsNodePerm, VfsNodeType, VfsTime, VfsTimeSpec,
+        VfsDirEntry, VfsFileStat, VfsFsStat, VfsInodeMode, VfsNodePerm, VfsNodeType, VfsTime,
+        VfsTimeSpec,
     },
     VfsResult,
 };
@@ -18,18 +21,24 @@ use vfscore::{
 #[derive(Default)]
 pub struct CustomRootInode {
     children: Mutex<Vec<(String, Arc<dyn VfsInode>)>>,
+    magic: Once<u128>,
 }
 
 impl CustomRootInode {
     pub fn new() -> Self {
         Self {
             children: Mutex::new(Vec::new()),
+            magic: Once::new(),
         }
     }
     pub fn insert_inode(&self, name: String, inode: Arc<dyn VfsInode>) {
         if !self.children.lock().iter().any(|x| x.0 == name) {
             self.children.lock().push((name.to_string(), inode));
         }
+    }
+
+    pub fn set_magic(&self, magic: u128) {
+        self.magic.call_once(|| magic);
     }
 }
 
@@ -92,5 +101,35 @@ impl VfsInode for CustomRootInode {
 
     fn update_time(&self, _time: VfsTime, _now: VfsTimeSpec) -> VfsResult<()> {
         Ok(())
+    }
+    fn get_super_block(&self) -> VfsResult<Arc<dyn VfsSuperBlock>> {
+        let magic = self.magic.get().ok_or(VfsError::NoSys)?;
+        Ok(Arc::new(CustomSuperBlock { magic: *magic }))
+    }
+}
+
+pub struct CustomSuperBlock {
+    magic: u128,
+}
+
+impl VfsSuperBlock for CustomSuperBlock {
+    fn stat_fs(&self) -> VfsResult<VfsFsStat> {
+        Err(VfsError::NoSys)
+    }
+
+    fn super_type(&self) -> SuperType {
+        SuperType::Single
+    }
+
+    fn fs_type(&self) -> Arc<dyn VfsFsType> {
+        todo!()
+    }
+
+    fn root_inode(&self) -> VfsResult<Arc<dyn VfsInode>> {
+        todo!()
+    }
+
+    fn magic(&self) -> u128 {
+        self.magic
     }
 }

@@ -3,7 +3,7 @@ use core::cmp::min;
 
 use basic::{
     config::MAX_FD_NUM,
-    constants::{io::*, time::TimeSpec, AT_FDCWD},
+    constants::{io::*, time::TimeSpec, LinuxErrno, AT_FDCWD},
     println_color,
     time::{read_time_us, TimeNow, ToClock},
     AlienError, AlienResult,
@@ -261,6 +261,16 @@ pub fn sys_fstat(
     let stat = vfs.vfs_getattr(file, attr)?;
     let file_stat = FileStat::from(*stat);
     task_domain.copy_to_user(statbuf, file_stat.as_bytes())?;
+    Ok(0)
+}
+
+pub fn sys_fsync(
+    vfs: &Arc<dyn VfsDomain>,
+    task_domain: &Arc<dyn TaskDomain>,
+    fd: usize,
+) -> AlienResult<isize> {
+    let file = task_domain.get_fd(fd)?;
+    vfs.vfs_fsync(file)?;
     Ok(0)
 }
 
@@ -643,5 +653,71 @@ pub fn sys_mkdirat(
         mode.bits(),
         OpenFlags::O_CREAT.bits(),
     )?;
+    Ok(0)
+}
+
+pub fn sys_unlinkat(
+    vfs: &Arc<dyn VfsDomain>,
+    task_domain: &Arc<dyn TaskDomain>,
+    dirfd: usize,
+    path_ptr: usize,
+    flags: usize,
+) -> AlienResult<isize> {
+    let tmp_buf = DVec::<u8>::new_uninit(256);
+    let (tmp_buf, len) = task_domain.read_string_from_user(path_ptr, tmp_buf)?;
+    let path = core::str::from_utf8(&tmp_buf.as_slice()[..len]).unwrap();
+    let flag = UnlinkatFlags::from_bits_truncate(flags as u32);
+    info!("<sys_unlinkat> path: {:?}, flags: {:?}", path, flag);
+    let (_, current_root) = user_path_at(task_domain, dirfd as isize, path)?;
+    vfs.vfs_unlink(current_root, &tmp_buf, len, flag.bits())?;
+    Ok(0)
+}
+
+pub fn sys_renameat2(
+    vfs: &Arc<dyn VfsDomain>,
+    task_domain: &Arc<dyn TaskDomain>,
+    olddirfd: usize,
+    oldpath: usize,
+    newdirfd: usize,
+    newpath: usize,
+    flags: usize,
+) -> AlienResult<isize> {
+    let old_tmp_buf = DVec::<u8>::new_uninit(256);
+    let new_tmp_buf = DVec::<u8>::new_uninit(256);
+    let (old_tmp_buf, old_len) = task_domain.read_string_from_user(oldpath, old_tmp_buf)?;
+    let (new_tmp_buf, new_len) = task_domain.read_string_from_user(newpath, new_tmp_buf)?;
+    let old_path = core::str::from_utf8(&old_tmp_buf.as_slice()[..old_len]).unwrap();
+    let new_path = core::str::from_utf8(&new_tmp_buf.as_slice()[..new_len]).unwrap();
+    let flag = Renameat2Flags::from_bits_truncate(flags as u32);
+    log::info!(
+        "<sys_renameat2> olddirfd: {} oldpath: {:?} newdirfd: {} newpath: {:?} flags: {:?}",
+        olddirfd as isize,
+        old_path,
+        newdirfd as isize,
+        new_path,
+        flag
+    );
+    if flag.contains(Renameat2Flags::RENAME_EXCHANGE)
+        && (flag.contains(Renameat2Flags::RENAME_NOREPLACE)
+            || flag.contains(Renameat2Flags::RENAME_WHITEOUT))
+    {
+        return Err(LinuxErrno::EINVAL);
+    }
+    let (cwd, root) = task_domain.fs_info()?;
+
+    let (_, old_root) = user_path_at(task_domain, olddirfd as isize, old_path)?;
+    let (_, new_root) = user_path_at(task_domain, newdirfd as isize, new_path)?;
+    let res = vfs.vfs_rename(
+        old_root,
+        new_root,
+        &old_tmp_buf,
+        old_len,
+        &new_tmp_buf,
+        new_len,
+        (cwd, root),
+        flags as u32,
+    );
+    log::info!("<sys_renameat2> res: {:?}", res);
+    res?;
     Ok(0)
 }

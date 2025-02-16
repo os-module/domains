@@ -227,6 +227,9 @@ impl FsDomain for DevFsDomainImpl {
     fn fs_name(&self, name: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
         self.generic_fs.fs_name(name)
     }
+    fn fs_magic(&self) -> AlienResult<u128> {
+        self.generic_fs.fs_magic()
+    }
 }
 
 impl Basic for DevFsDomainImpl {

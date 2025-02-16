@@ -47,6 +47,7 @@ pub struct GenericFsDomain {
     mount_func: Option<fn(root: &Arc<dyn VfsDentry>)>,
     init_func: Option<fn()>,
     parent_dentry_map: Mutex<BTreeMap<InodeID, Arc<dyn VfsDentry>>>,
+    magic: Once<u128>,
 }
 
 impl Debug for GenericFsDomain {
@@ -72,6 +73,7 @@ impl GenericFsDomain {
             init_func,
             name,
             parent_dentry_map: Mutex::new(BTreeMap::new()),
+            magic:Once::new()
         }
     }
 
@@ -130,6 +132,9 @@ impl FsDomain for GenericFsDomain {
         if let Some(func) = self.mount_func {
             func(&root);
         }
+
+        let magic = root.inode()?.get_super_block()?.magic();
+        self.magic.call_once(|| magic);
 
         let inode_id = self
             .inode_index
@@ -300,7 +305,7 @@ impl FsDomain for GenericFsDomain {
         let dentry = self.dentry_map.lock().index(&inode).clone();
         let name = core::str::from_utf8(name.as_slice()).unwrap();
         let _sub_dentry = dentry.remove(name);
-        println!("<dentry_remove> remove {} from {}", name, inode);
+        // println!("<dentry_remove> remove {} from {}", name, inode);
         Ok(())
     }
 
@@ -425,7 +430,7 @@ impl FsDomain for GenericFsDomain {
         let parent = parent_dentry.inode()?;
         parent.unlink(name)?;
         parent_dentry.remove(name);
-        println!("<generic> The unlink implementation is not correct");
+        // println!("<generic> The unlink implementation is not correct");
         Ok(())
     }
 
@@ -513,7 +518,7 @@ impl FsDomain for GenericFsDomain {
         let old_parent = old_parent_dt.inode()?;
         let new_parent = new_parent_dt.inode()?;
         old_parent.rename_to(old_name, new_parent, new_name, flags)?;
-        unimplemented!("the rename operation is not implemented correctly");
+        Ok(())
     }
 
     fn update_time(&self, inode: InodeID, time: VfsTime, now: VfsTimeSpec) -> AlienResult<()> {
@@ -557,6 +562,10 @@ impl FsDomain for GenericFsDomain {
         let copy_len = core::cmp::min(name.len(), fs_name.len());
         name.as_mut_slice()[..copy_len].copy_from_slice(&fs_name.as_bytes()[..copy_len]);
         Ok((name, copy_len))
+    }
+    fn fs_magic(&self) -> AlienResult<u128> {
+        let v = self.magic.get().unwrap();
+        Ok(*v)
     }
 }
 define_unwind_for_FsDomain!(GenericFsDomain);

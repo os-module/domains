@@ -189,9 +189,10 @@ pub fn do_mprotect(addr: usize, len: usize, prot: u32) -> AlienResult<isize> {
     let task = current_task().unwrap();
     let mut mmap = task.mmap.lock();
     let region = mmap.get_region_mut(addr).ok_or(AlienError::EINVAL)?;
-    let map_flags = from_prot(prot); // no V  flag
-                                     // basic::println_color!(32, "mprotect: region:{:#x?}", region);
-                                     // basic::println_color!(32, "mprotect: addr:{:#x}, len:{:#x}, prot:{:?}, map_flag:{:?}", addr, len, prot,map_flags);
+    // no V flag
+    let map_flags = from_prot(prot);
+    // basic::println_color!(32, "mprotect: region:{:#x?}", region);
+    // basic::println_color!(32, "mprotect: addr:{:#x}, len:{:#x}, prot:{:?}, map_flag:{:?}", addr, len, prot,map_flags);
     region.set_prot(prot);
     let addr_start = align_down_4k(addr);
     let addr_end = align_up_4k(addr + len);
@@ -205,12 +206,18 @@ pub fn do_mprotect(addr: usize, len: usize, prot: u32) -> AlienResult<isize> {
 }
 
 pub fn do_load_page_fault(addr: usize) -> AlienResult<()> {
+    log::warn!("load page fault: addr:{:#x}", addr);
     let task = current_task().unwrap();
     let mut mmap = task.mmap.lock();
     let region = mmap.get_region_mut(addr).ok_or(AlienError::EINVAL)?;
-    println_color!(31, "load page fault: region:{:#x?}", region);
-    let res = task.address_space.lock().query(addr).unwrap();
-    println_color!(31, "load page fault: res:{:#x?}", res);
+    log::warn!("load page fault: region:{:#x?}", region);
+    let addr = align_down_4k(addr);
+    task.address_space
+        .lock()
+        .protect(addr..addr + FRAME_SIZE, from_prot(region.prot))
+        .unwrap();
+    // let res = task.address_space.lock().query(addr).unwrap();
+    // println_color!(31, "load page fault: res:{:#x?}", res);
     Ok(())
 }
 

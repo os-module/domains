@@ -12,7 +12,7 @@ use core::sync::atomic::{AtomicBool, AtomicU64};
 use basic::{
     constants::{
         epoll::{EpollCtlOp, EpollEvent},
-        io::{Fcntl64Cmd, OpenFlags, PollEvents, SeekFrom},
+        io::{Fcntl64Cmd, OpenFlags, PollEvents, SeekFrom, UnlinkatFlags},
         time::TimeSpec,
     },
     sync::{Mutex, RwLock},
@@ -28,8 +28,10 @@ use spin::{Lazy, Once};
 use storage::{DataStorageHeap, StorageBuilder};
 use vfscore::{
     dentry::VfsDentry,
-    path::VfsPath,
-    utils::{VfsFileStat, VfsInodeMode, VfsNodeType, VfsPollEvents, VfsTime, VfsTimeSpec},
+    path::{SysContext, VfsPath},
+    utils::{
+        VfsFileStat, VfsInodeMode, VfsNodeType, VfsPollEvents, VfsRenameFlag, VfsTime, VfsTimeSpec,
+    },
 };
 
 use crate::{
@@ -198,6 +200,7 @@ impl VfsDomain for VfsDomainImpl {
         let res = file.write_at(offset, &buf)?;
         Ok(res)
     }
+
     fn vfs_write(&self, inode: InodeID, buf: &DVec<u8>, w_len: usize) -> AlienResult<usize> {
         let file = get_file(inode).unwrap();
         if buf.len() != w_len {
@@ -268,6 +271,52 @@ impl VfsDomain for VfsDomainImpl {
         file.dentry()
             .inode()?
             .update_time(VfsTime::ModifiedTime(time), now)?;
+        Ok(())
+    }
+
+    fn vfs_rename(
+        &self,
+        old_inode: InodeID,
+        new_inode: InodeID,
+        old_path: &DVec<u8>,
+        old_len: usize,
+        new_path: &DVec<u8>,
+        new_len: usize,
+        fs_info: (InodeID, InodeID),
+        flag: u32,
+    ) -> AlienResult<()> {
+        let old_file = get_file(old_inode).unwrap();
+        let new_file = get_file(new_inode).unwrap();
+        let old_dentry = old_file.dentry();
+        let new_dentry = new_file.dentry();
+
+        let old_path = core::str::from_utf8(&old_path.as_slice()[..old_len]).unwrap();
+        let new_path = core::str::from_utf8(&new_path.as_slice()[..new_len]).unwrap();
+
+        let old_path = VfsPath::new(system_root_fs(), old_dentry).join(old_path)?;
+        let new_path = VfsPath::new(system_root_fs(), new_dentry).join(new_path)?;
+        let context = syscontext_for_vfs(fs_info);
+        old_path.rename_to(context, new_path, VfsRenameFlag::from_bits_truncate(flag))?;
+        Ok(())
+    }
+
+    fn vfs_unlink(
+        &self,
+        inode: InodeID,
+        path: &DVec<u8>,
+        path_len: usize,
+        flag: u32,
+    ) -> AlienResult<()> {
+        let file = get_file(inode).unwrap();
+        let dentry = file.dentry();
+        let path = core::str::from_utf8(&path.as_slice()[..path_len]).unwrap();
+        let path = VfsPath::new(system_root_fs(), dentry).join(path)?;
+        let flag = UnlinkatFlags::from_bits_truncate(flag as u32);
+        if flag.contains(UnlinkatFlags::AT_REMOVEDIR) {
+            path.rmdir()?;
+        } else {
+            path.unlink()?;
+        }
         Ok(())
     }
 
@@ -351,6 +400,21 @@ impl VfsDomain for VfsDomainImpl {
         Ok(id)
     }
 }
+
+fn syscontext_for_vfs(fs_info: (InodeID, InodeID)) -> SysContext {
+    let cwd = get_file(fs_info.0).unwrap();
+    let cwd = cwd.dentry();
+    let root = get_file(fs_info.1).unwrap();
+    let root = root.dentry();
+    SysContext {
+        pid: 0,
+        uid: 0,
+        gid: 0,
+        cwd,
+        root,
+    }
+}
+
 define_unwind_for_VfsDomain!(VfsDomainImpl);
 pub fn main() -> Box<dyn VfsDomain> {
     Box::new(UnwindWrap::new(VfsDomainImpl))
