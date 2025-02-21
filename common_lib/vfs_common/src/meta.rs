@@ -3,7 +3,7 @@ use core::fmt::Debug;
 
 use basic::constants::io::OpenFlags;
 use interface::FsDomain;
-use storage::DataStorageHeap;
+use storage::CustomStorge;
 
 #[derive(Debug)]
 pub struct KernelFileMeta {
@@ -11,7 +11,7 @@ pub struct KernelFileMeta {
     pub open_flag: OpenFlags,
     pub real_inode_id: u64,
     pub fs_domain: Arc<dyn FsDomain>,
-    pub fs_domain_ident: Vec<u8, DataStorageHeap>,
+    pub fs_domain_ident: Vec<u8, CustomStorge>,
 }
 
 impl KernelFileMeta {
@@ -20,7 +20,7 @@ impl KernelFileMeta {
         open_flag: OpenFlags,
         real_inode_id: u64,
         fs_domain: Arc<dyn FsDomain>,
-        fs_domain_ident: Vec<u8, DataStorageHeap>,
+        fs_domain_ident: Vec<u8, CustomStorge>,
     ) -> Self {
         Self {
             pos,

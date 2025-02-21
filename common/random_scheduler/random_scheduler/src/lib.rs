@@ -9,11 +9,11 @@ use basic::{arch::hart_id, println, sync::Mutex};
 use common_scheduler::{CommonSchedulerDomain, Scheduler, UnwindWrap};
 use interface::SchedulerDomain;
 use shared_heap::DBox;
-use storage::DataStorageHeap;
+use storage::CustomStorge;
 use task_meta::TaskSchedulingInfo;
 
-type __TaskList = Mutex<VecDeque<DBox<TaskSchedulingInfo>, DataStorageHeap>>;
-type TaskList = Arc<__TaskList, DataStorageHeap>;
+type __TaskList = Mutex<VecDeque<DBox<TaskSchedulingInfo>, CustomStorge>>;
+type TaskList = Arc<__TaskList, CustomStorge>;
 #[derive(Debug)]
 pub struct RandomScheduler {
     tasks: TaskList,
@@ -28,7 +28,7 @@ impl Default for RandomScheduler {
 impl RandomScheduler {
     pub fn new() -> Self {
         println!("RandomScheduler: new");
-        let task_list = storage::get_data::<__TaskList>("tasks").unwrap();
+        let task_list = storage::get::<__TaskList>("tasks").unwrap();
         let len = task_list.lock().len();
         task_list.lock().reserve(20);
         println!("RandomScheduler: The task list len is {}", len);

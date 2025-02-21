@@ -155,7 +155,7 @@ fn init_filesystem_after() -> VfsResult<Arc<dyn VfsDentry>> {
         let map_shadow = VFS_MAP_SHADOW.lock();
         for (id, _) in map_shadow.iter() {
             let key = format!("kfile_{}", id);
-            let meta = storage::get_data::<Mutex<KernelFileMeta>>(&key).unwrap();
+            let meta = storage::get::<Mutex<KernelFileMeta>>(&key).unwrap();
             let real_inode_id = meta.lock().real_inode_id;
             let fs_domain = meta.lock().fs_domain.clone();
             let dentry = {

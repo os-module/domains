@@ -12,7 +12,7 @@ use basic::{
 use downcast_rs::{impl_downcast, DowncastSync};
 use interface::InodeID;
 use shared_heap::DVec;
-use storage::{DataStorageHeap, StorageBuilder};
+use storage::CustomStorge;
 use vfs_common::meta::KernelFileMeta;
 use vfscore::{
     dentry::VfsDentry,
@@ -30,7 +30,7 @@ pub struct KernelFile {
     dentry: Arc<dyn VfsDentry>,
 }
 
-pub type KMeta = Arc<Mutex<KernelFileMeta>, DataStorageHeap>;
+pub type KMeta = Arc<Mutex<KernelFileMeta>, CustomStorge>;
 
 impl Debug for KernelFile {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
@@ -43,7 +43,7 @@ impl Debug for KernelFile {
 impl KernelFile {
     pub fn new(dentry: Arc<dyn VfsDentry>, open_flag: OpenFlags, inode_id: InodeID) -> Self {
         let key = format!("kfile_{}", inode_id);
-        let meta = storage::get_or_insert_with_data(&key, || {
+        let meta = storage::get_or_insert(&key, || {
             let pos = if open_flag.contains(OpenFlags::O_APPEND) {
                 dentry.inode().unwrap().get_attr().unwrap().st_size
             } else {
@@ -58,7 +58,7 @@ impl KernelFile {
             let real_inode_id = inode.inode_id();
             let fs_domain = inode.fs_domain();
             let ident = inode.fs_domain_ident();
-            let mut fs_domain_ident = Vec::new_in(DataStorageHeap::build());
+            let mut fs_domain_ident = Vec::new_in(CustomStorge);
             fs_domain_ident.extend_from_slice(&ident);
             Mutex::new(KernelFileMeta::new(
                 pos,
@@ -129,18 +129,12 @@ impl_downcast!(sync  File);
 
 impl File for KernelFile {
     fn read(&self, buf: DVec<u8>) -> AlienResult<(DVec<u8>, usize)> {
-        if buf.is_empty() {
-            return Ok((buf, 0));
-        }
         let pos = self.meta.lock().pos;
         let (buf, read) = self.read_at(pos, buf)?;
         self.meta.lock().pos += read as u64;
         Ok((buf, read))
     }
     fn write(&self, buf: &DVec<u8>) -> AlienResult<usize> {
-        if buf.is_empty() {
-            return Ok(0);
-        }
         let pos = self.meta.lock().pos;
         let write = self.write_at(pos, buf)?;
         self.meta.lock().pos += write as u64;
@@ -307,7 +301,7 @@ impl Drop for KernelFile {
         let inode_id = self.inode_id;
         let key = format!("kfile_{}", inode_id);
         // basic::println!("drop KernelFile: {}", key);
-        let meta = storage::remove_data::<Mutex<KernelFileMeta>>(&key);
+        let meta = storage::remove::<Mutex<KernelFileMeta>>(&key);
         assert!(meta.is_some());
     }
 }

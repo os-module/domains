@@ -25,7 +25,7 @@ use interface::{
 use log::debug;
 use shared_heap::{DBox, DVec};
 use spin::{Lazy, Once};
-use storage::{DataStorageHeap, StorageBuilder};
+use storage::CustomStorge;
 use vfscore::{
     dentry::VfsDentry,
     path::{SysContext, VfsPath},
@@ -58,17 +58,15 @@ mod tree;
 static NET_STACK_DOMAIN: Once<Arc<dyn NetDomain>> = Once::new();
 static VFS_MAP: RwLock<BTreeMap<InodeID, Arc<dyn File>>> = RwLock::new(BTreeMap::new());
 
-static INODE_ID: Lazy<Arc<AtomicU64, DataStorageHeap>> =
-    Lazy::new(|| storage::get_or_insert_with_data("inode_id", || AtomicU64::new(4)));
+static INODE_ID: Lazy<Arc<AtomicU64, CustomStorge>> =
+    Lazy::new(|| storage::get_or_insert("inode_id", || AtomicU64::new(4)));
 
-static VFS_INIT: Lazy<Arc<AtomicBool, DataStorageHeap>> =
-    Lazy::new(|| storage::get_or_insert_with_data("vfs_init", || AtomicBool::new(false)));
+static VFS_INIT: Lazy<Arc<AtomicBool, CustomStorge>> =
+    Lazy::new(|| storage::get_or_insert("vfs_init", || AtomicBool::new(false)));
 
-type DataType = Arc<Mutex<BTreeMap<InodeID, (), DataStorageHeap>>, DataStorageHeap>;
+type DataType = Arc<Mutex<BTreeMap<InodeID, (), CustomStorge>>, CustomStorge>;
 static VFS_MAP_SHADOW: Lazy<DataType> = Lazy::new(|| {
-    storage::get_or_insert_with_data("inode2inode", || {
-        Mutex::new(BTreeMap::new_in(DataStorageHeap::build()))
-    })
+    storage::get_or_insert("inode2inode", || Mutex::new(BTreeMap::new_in(CustomStorge)))
 });
 
 fn insert_dentry(dentry: Arc<dyn VfsDentry>, open_flags: OpenFlags) -> InodeID {

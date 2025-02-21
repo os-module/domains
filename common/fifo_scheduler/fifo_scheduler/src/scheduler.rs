@@ -3,11 +3,11 @@ use alloc::{collections::VecDeque, sync::Arc};
 use basic::{arch::hart_id, sync::Mutex};
 use common_scheduler::Scheduler;
 use shared_heap::DBox;
-use storage::{DataStorageHeap, StorageBuilder};
+use storage::CustomStorge;
 use task_meta::TaskSchedulingInfo;
 
-type __TaskList = Mutex<VecDeque<DBox<TaskSchedulingInfo>, DataStorageHeap>>;
-type TaskList = Arc<__TaskList, DataStorageHeap>;
+type __TaskList = Mutex<VecDeque<DBox<TaskSchedulingInfo>, CustomStorge>>;
+type TaskList = Arc<__TaskList, CustomStorge>;
 #[derive(Debug)]
 pub struct CustomFiFoScheduler {
     tasks: TaskList,
@@ -15,8 +15,8 @@ pub struct CustomFiFoScheduler {
 
 impl CustomFiFoScheduler {
     pub fn new() -> Self {
-        let task_list = storage::get_or_insert_with_data::<__TaskList, _>("tasks", || {
-            __TaskList::new(VecDeque::new_in(DataStorageHeap::build()))
+        let task_list = storage::get_or_insert::<__TaskList, _>("tasks", || {
+            __TaskList::new(VecDeque::new_in(CustomStorge))
         });
         Self { tasks: task_list }
     }
